@@ -65,3 +65,4 @@ See `docs/REPRODUCIBILITY.md`. Each run writes `run_manifest.json`, `train.jsonl
 
 ## Limitations
 See `docs/ASSUMPTIONS_AND_LIMITATIONS.md` (uncalibrated energy/acoustic constants, CTDE critics, no privacy mechanism, weighting changes the effective objective, no convergence proof).
+# fed_matd3_iout
