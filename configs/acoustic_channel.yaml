@@ -1,0 +1,33 @@
+# Underwater acoustic model.  TL(d,f)=k*10log10(d/1m)+alpha(f)*d/1000  [dB]  (Thorp absorption, f in kHz)
+# SNR_dB = SL - TL - NL;  SL = 170.8 + 10log10(P_ac_W) + DI;  NL = N(f)_dB + 10log10(B_Hz)
+# From SAC-TD3: f=12 kHz, bandwidth 4 kHz, k=1.5, v_s=1500 m/s, Thorp, Rayleigh capture threshold. Everything else (transmit powers,
+# efficiencies, thresholds, sensor-link 25 kHz, rate caps, outage process, ranges) is an ASSUMPTION exposed here.
+# NOTE: SAC-TD3 Eq.(8) uses l=d/1000 km with no reference range; this code uses a 1 m reference (see docs/MATHEMATICAL_MODEL_AUDIT.md, C2).
+acoustic:
+  sound_speed_mps: 1500.0
+  spreading_k: 1.5
+  shipping_s: 0.5
+  wind_mps: 5.0
+  sensor_link:            # sensor <-> AUV (short range)
+    freq_khz: 25.0
+    bandwidth_hz: 4000.0
+    p_elec_w: 2.0
+    efficiency: 0.5
+    directivity_db: 0.0
+    snr_threshold_db: 10.0     # Rayleigh packet-success threshold gamma_th
+    max_rate_mbps: 0.05        # modem cap on Shannon rate
+    fading: true
+  usv_link:               # AUV <-> USV (long range)
+    freq_khz: 12.0
+    bandwidth_hz: 4000.0
+    p_elec_w: 30.0
+    efficiency: 0.5
+    directivity_db: 0.0
+    snr_threshold_db: 10.0
+    max_rate_mbps: 0.05
+    fading: true
+    range_m: 110.0             # contact range (3-D slant)
+    outage_p_drop: 0.01        # Gilbert-Elliott: P(up -> down) per step
+    outage_p_recover: 0.10     # P(down -> up) per step
+    model_share: 0.5           # fraction of link capacity given to model traffic when a transfer is active
+  rx_power_w: 0.5              # AUV receive power (W)  ASSUMPTION

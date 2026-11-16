@@ -1,0 +1,9 @@
+allocation:
+  method: sta              # sta | greedy | hungarian_priority | nearest
+  backlog_model: exact     # exact | ce (certainty-equivalent) | current (no prediction)
+  poisson_tol: 1.0e-9      # truncation tolerance of the Poisson sum
+  v_nom: 1.7               # nominal speed (m/s) = (v_min+v_max)/2
+  weights: {backlog: 1.0, semantic: 0.5, travel: 1.0, overflow: 0.2, switch: 0.05, workload: 0.05, age: 0.0}
+  priority_alpha: 0.05     # Paper 2 priority rho_ij = lam*b/B - alpha*d  (greedy / hungarian baselines)
+  contact_time_s: 60.0     # T_contact budget used for collectable-volume estimate
+  big_cost: 1.0e6

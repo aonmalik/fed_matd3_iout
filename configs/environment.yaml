@@ -1,0 +1,35 @@
+env:
+  n_auvs: 3
+  n_sensors: 20
+  region_m: 200.0         # square side L (m)  (Paper 2: 200 x 200 m)
+  auv_depth_m: 50.0       # AUV depth below USV (m), fixed-depth motion (Paper 2)
+  sensor_depth_m: 50.0    # Paper 2 Fig. 3(b): default sensor depth 50 m (same depth as AUVs => hover slant = r_dc)
+  dt_s: 1.0
+  episode_steps: 1000
+  v_min: 1.2              # m/s   (Paper 2)
+  v_max: 2.2
+  r_dc: 6.0               # sensor service (hover) radius, horizontal (m)  (Paper 2)
+  d_safe: 5.0             # unsafe-proximity threshold (m)               (Paper 2)
+  sea_current: [0.0, 0.0] # constant drift (m/s), disabled by default
+  onboard_capacity_mbit: 20.0   # ASSUMPTION: AUV carry buffer
+  offload_hi: 0.5         # go to USV when onboard fill >= hi
+  offload_lo: 0.05        # resume sensing when fill <= lo (while in USV range)
+  max_hover_steps: 60
+  buffer_mbit: 2.0        # Q per sensor (Paper 2)
+  buffer_units: 5000      # B_j  (Paper 2)
+  initial_fill: [0.0, 0.5]  # ASSUMPTION: initial buffer fraction ~ U(lo,hi) (Paper 2 states random initial contents, not the law)
+traffic:
+  mode: iid               # iid | regional (non-IID: west/east rate bands, north/south semantic bands)
+  base_rates: [3.0, 5.0, 8.0, 12.0]   # units/s (Paper 2)
+  scale: 3.0
+  rate_change_step: -1    # if >=0 multiply all rates by rate_change_factor at that step
+  rate_change_factor: 1.0
+usv:
+  policy: centroid        # centroid | static
+  speed: 5.0              # m/s: SAC-TD3 Table III max surface speed. Paper 2 relocates the USV by FIM maximisation (not reproduced; 'centroid' is a simplification)
+  p_tx_w: 0.0             # USV energy not modelled (non-binding)
+energy:                   # ALL ASSUMPTIONS / UNCALIBRATED (Papers 1/2 do not give the propulsion law coefficients)
+  p0_w: 20.0              # hotel + baseline power (W), paid while moving or hovering
+  kappa: 8.0              # W/(m/s)^3  cubic propulsion coefficient
+  p_tx_elec_w: 30.0       # AUV->USV transmit electrical power (consistent with acoustic.usv_link.p_elec_w)
+  e_grad_j: 0.05          # computation energy per local gradient step (J)  ASSUMPTION
