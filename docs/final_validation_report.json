@@ -1,13 +1,13 @@
 {
   "schema": "fed_matd3_iout.final_validation/2",
   "protocol_version": "2.2",
-  "config_hash": "c43cc538bd1733f1",
+  "config_hash": "e1a9b6e20a25b7be",
   "provenance": {
-    "commit": "",
-    "branch": "",
-    "working_tree_clean": false,
+    "commit": "653d52b9472ecb190b7cfc53e003afded44d430e",
+    "branch": "protocol-2.2-candidate",
+    "working_tree_clean": true,
     "dirty_files": [],
-    "source_tree_hash": "144c5f8c68495bd1",
+    "source_tree_hash": "07e0cd3bf2124d75",
     "note": "commit = HEAD when the report was generated; a report cannot contain the hash of the commit that stores it, so it is committed separately AFTER the code commit it describes; source_tree_hash verifies the code is unchanged."
   },
   "environment": {
@@ -25,13 +25,13 @@
     "deselected_reason": "this test validates the report that is being generated here (it is run separately against the committed report)",
     "returncode": 0,
     "failures": [],
-    "collected": 379,
-    "passed": 379,
+    "collected": 430,
+    "passed": 430,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "counts_available": true,
-    "wall_s": 118.7
+    "wall_s": 113.7
   },
   "sections": {
     "reproducibility": {
@@ -39,7 +39,7 @@
       "passed": true,
       "errors": [],
       "protocol_version": "2.2",
-      "config_hash": "c43cc538bd1733f1",
+      "config_hash": "e1a9b6e20a25b7be",
       "train_episodes": 500,
       "n_train_seeds": 10,
       "eval_scenarios": 20,
@@ -47,8 +47,8 @@
         {
           "label": "current",
           "protocol_version": "2.2",
-          "manifest_config_hash": "c43cc538bd1733f1",
-          "recomputed_config_hash": "c43cc538bd1733f1",
+          "manifest_config_hash": "e1a9b6e20a25b7be",
+          "recomputed_config_hash": "e1a9b6e20a25b7be",
           "hash_reproduced": true,
           "n_train_seeds": 10,
           "train_episodes": 500,
@@ -56,9 +56,9 @@
           "yaml_file_sha256_16": {
             "ablations.yaml": "13f9b8e06c5c1f5f",
             "acoustic_channel.yaml": "0763e4ac26647042",
-            "default.yaml": "30971b87b9549885",
+            "default.yaml": "c0412d7b42113453",
             "environment.yaml": "a8bf2f2027f59dc3",
-            "federated_learning.yaml": "3a351ca4183a040a",
+            "federated_learning.yaml": "19b7b899c2935971",
             "matd3.yaml": "ca353ab1621a6f43",
             "reward.yaml": "b05ad5eb245a7777",
             "semantic_model.yaml": "e3fa0eda5d2b6e17",
@@ -991,7 +991,7 @@
             "mappo"
           ],
           "aspect": "training computation-energy accounting",
-          "detail": "The MATD3 family charges e_grad_j per local gradient step through env.add_compute_energy (training-time E_comp_j); MAPPO does not charge any computation energy for its shared-optimiser minibatch steps, so its training E_comp_j is 0 and NOT comparable. The accounting unit (per minibatch step, per sample, per agent) is an open author decision (docs/AUTHOR_DECISIONS.md D9). Evaluation episodes contain no learning for any method, so evaluation energy is unaffected.",
+          "detail": "MODELLED vs MEASURED: the MATD3 family charges the ASSUMED constant e_grad_j per local gradient step (training E_comp_j, a model parameter, not a measurement); MAPPO charges nothing, so its training E_comp_j is NOT 0 'energy' but UNACCOUNTED. D9 (provisional): compute energy is reported in joules only from a real measurement (utils/compute_energy.py); no instrument exists in the build environment, so every method reports compute energy as `not_measured` next to its measured compute TIME (training_compute in evaluation.json). Cross-method TRAINING total-energy comparisons are therefore INCOMPLETE and no energy-efficiency claim may rest on them. Mission energy (propulsion + communication) and EVALUATION energy (no learning in any method) are separate and unaffected.",
           "can_equalise": false
         }
       ],
