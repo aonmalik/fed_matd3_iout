@@ -1,0 +1,191 @@
+{
+  "method": "s3a_fedmatd3",
+  "episodes": 6,
+  "episode_steps": 1000,
+  "wall_s": 82.44469404220581,
+  "sec_per_episode": 13.740782340367636,
+  "gradient_steps_total": 16503,
+  "updates_created": 27,
+  "aggregated": 26,
+  "rejected": 0,
+  "expired": 0,
+  "unresolved": 1,
+  "stats_discarded_episode": 0,
+  "comm_tx_s_per_upload": 24.742400000000004,
+  "tx_energy_j_per_upload_incl_acks": 742.2720000000002,
+  "model_bytes_per_upload": 77320.0,
+  "aggregation_rounds": 16,
+  "single_update_rounds": 7,
+  "single_update_round_fraction": 0.4375,
+  "avg_staleness": 0.2692307692307692,
+  "link_up_fraction": 0.9158888888888889,
+  "bytes_total": 5570432.0,
+  "relevance_min_mean_max": [
+    0.0,
+    0.0053434693839531045,
+    0.13893020398278072
+  ],
+  "weights_min_mean_max": [
+    0.3333333333333333,
+    0.6153846153846154,
+    1.0
+  ],
+  "accounting_balanced": true,
+  "all_params_finite": true,
+  "return_mean_per_episode": [
+    -412.0494564194232,
+    -469.51405980810523,
+    -363.1643638865401,
+    -426.21552232218284,
+    -481.28374305119115,
+    -430.2551018856466
+  ],
+  "aggregation_diagnostics": {
+    "n_rounds": 16,
+    "participants_per_round": {
+      "mean": 1.625,
+      "histogram": {
+        "1": 7,
+        "2": 8,
+        "3": 1
+      }
+    },
+    "single_update_rounds": 7,
+    "single_update_round_fraction": 0.4375,
+    "multi_update_rounds": 9,
+    "relevance_M": {
+      "all_updates_min_mean_max": [
+        0.0,
+        0.0053434693839531045,
+        0.13893020398278072
+      ],
+      "multi_rounds_quantiles_5_50_95": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "relevance_factor_g": {
+      "floor_eps_m": 0.1,
+      "possible_range": [
+        0.1,
+        1.0
+      ],
+      "observed_range": [
+        0.1,
+        0.22503718358450267
+      ],
+      "within_round_spread_max_over_min": {
+        "quantiles_5_50_95": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "max": 1.0
+      }
+    },
+    "weight_variance_shares_multi_rounds": {
+      "sample_count": {
+        "mean": 1.0,
+        "n": 1
+      },
+      "staleness": {
+        "mean": 0.0,
+        "n": 1
+      },
+      "relevance": {
+        "mean": 0.0,
+        "n": 1
+      }
+    },
+    "counterfactual_relevance_effect": {
+      "weight_total_variation": {
+        "mean": 0.0,
+        "quantiles_5_50_95": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max": 0.0
+      },
+      "relative_update_change_L2": {
+        "mean": 0.0,
+        "quantiles_5_50_95": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "max": 0.0
+      },
+      "note": "relevance changes the applied update by this relative L2 amount versus the same round with relevance factor == 1"
+    },
+    "weight_entropy_per_round": {
+      "mean": 0.4152368271341307,
+      "std": 0.3784694851190652
+    },
+    "per_client": {
+      "0": {
+        "rounds_participated": 8,
+        "relevance_mean": 0.0,
+        "relevance_min": 0.0,
+        "relevance_max": 0.0,
+        "weight_mean": 0.6666666666666666,
+        "weight_std": 0.26352313834736496,
+        "weight_cv": 0.39528470752104744
+      },
+      "1": {
+        "rounds_participated": 9,
+        "relevance_mean": 0.0,
+        "relevance_min": 0.0,
+        "relevance_max": 0.0,
+        "weight_mean": 0.48153698153698155,
+        "weight_std": 0.05239813378953591,
+        "weight_cv": 0.1088143502961917
+      },
+      "2": {
+        "rounds_participated": 9,
+        "relevance_mean": 0.01543668933142008,
+        "relevance_min": 0.0,
+        "relevance_max": 0.13893020398278072,
+        "weight_mean": 0.7036482036482037,
+        "weight_std": 0.2696756713857643,
+        "weight_cv": 0.38325354912806897
+      }
+    },
+    "inert_rounds_note": "single-update rounds have weight 1.0: sample count, staleness and relevance cannot matter there",
+    "verdict": {
+      "fraction_of_rounds_where_relevance_can_act": 0.5625,
+      "median_weight_tv_in_multi_rounds": 0.0,
+      "median_relative_update_change": 0.0,
+      "relevance_share_of_weight_log_variance": 0.0,
+      "reading": "relevance moves the weights by <2% (TV) in a typical multi-update round: contribution is NOT expected to be measurable",
+      "thresholds_tv": [
+        0.02,
+        0.1
+      ],
+      "caveat": "descriptive only; says nothing about whether the shift improves performance"
+    }
+  },
+  "retry_counters": {
+    "retry_attempts": 0,
+    "retry_deferred_updates": 0,
+    "retry_deferred_steps": 0,
+    "rejected_bytes": 0.0,
+    "expired_bytes": 0.0,
+    "wasted_uplink_bytes": 0.0,
+    "wasted_uplink_fraction": 0.0,
+    "backoff_s_total": 0.0
+  },
+  "provenance": {
+    "commit": "ab9a3964a23c35095d77617de54b97e685b4064d",
+    "branch": "audit/protocol-2.1-preparation",
+    "working_tree_clean": true,
+    "config_hash": "c76394bf7eaa9005",
+    "protocol_version": "2.1",
+    "source_tree_hash": "9fd5cbf3b58d3d7d",
+    "episodes": 6,
+    "seed": 0,
+    "method": "s3a_fedmatd3"
+  },
+  "note": "short probe at main-protocol episode length; descriptive diagnostics only; no performance claim"
+}

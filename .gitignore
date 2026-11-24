@@ -1,0 +1,32 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+results/
+checkpoints/
+logs/
+*.pt
+*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+.env
+
+# Experiment outputs
+results/
+checkpoints/
+logs/
+*.pt
+*.pth
+*.ckpt
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+*:Zone.Identifier

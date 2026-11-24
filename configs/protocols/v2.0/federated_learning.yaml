@@ -1,0 +1,27 @@
+federated:
+  enabled: true
+  mode: async              # async (buffered, FedBuff-style) | sync (barrier with timeout)
+  aggregation: s3a         # fedavg | stale | semantic | service | s3a
+  local_steps_per_update: 100  # gradient steps between update packets
+  min_local_transitions: 500   # minimum local transitions before first update
+  agg_buffer_size: 2       # async: aggregate when >= K accepted updates are buffered ...
+  agg_timeout_s: 120.0     # ... or when the oldest buffered update is this old
+  sync_timeout_s: 300.0    # sync: aggregate whatever arrived after this wait
+  max_staleness: 8         # reject updates with Delta > max_staleness (rounds)
+  kappa: 0.3               # staleness decay  w = exp(-kappa*Delta)
+  alpha: 1.0               # sample-count exponent
+  eta: 1.0                 # relevance exponent
+  eps_m: 0.1               # relevance floor
+  beta_sem: 0.5            # M = beta*rho_sem + (1-beta)*rho_svc   (s3a)
+  clip_norm: 5.0           # global L2 clip of Delta (null/inf disables)
+  server_lr: 1.0           # eta_g
+  max_client_weight: 0.8   # weight cap (renormalised); 1.0 disables
+  download_blend: 1.0      # 1.0 = replace local actor with global on download
+  model_bytes_per_param: 4
+  ack_bytes: 64
+  upload_timeout_s: 400.0
+  max_buffer_age_s: 600.0   # a BUFFERED update older than this at the USV is EXPIRED (must exceed agg/sync timeouts)
+  maturity_eps: 0.05        # a collected batch is 'mature' once its remaining VoI <= eps (rho_sem attribution)
+  allow_fragmentation: true   # false => transfer restarts if the link drops
+  client_speed: [1.0]         # relative gradient-step rate per AUV (cycled); <1 => straggler
+  local_reward_weight: 0.3    # zeta: r_i = (1-zeta) r_team + zeta r_local

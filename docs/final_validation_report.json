@@ -1,0 +1,1320 @@
+{
+  "schema": "fed_matd3_iout.final_validation/2",
+  "protocol_version": "2.1",
+  "config_hash": "c76394bf7eaa9005",
+  "provenance": {
+    "commit": "7b8a88e6b5ab56b5f375b9ed53a7b53a89d7929e",
+    "branch": "audit/protocol-2.1-preparation",
+    "working_tree_clean": true,
+    "dirty_files": [],
+    "source_tree_hash": "9fd5cbf3b58d3d7d",
+    "note": "commit = HEAD when the report was generated; a report cannot contain the hash of the commit that stores it, so it is committed separately AFTER the code commit it describes; source_tree_hash verifies the code is unchanged."
+  },
+  "environment": {
+    "python": "3.13.18",
+    "torch": "2.15.0+cu132",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "device": "cpu"
+  },
+  "tests": {
+    "command": "python -m pytest -q -p no:warnings -rfE --junitxml=<tmp> --deselect tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit",
+    "deselected": [
+      "tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit"
+    ],
+    "deselected_reason": "this test validates the report that is being generated here (it is run separately against the committed report)",
+    "returncode": 0,
+    "failures": [],
+    "collected": 318,
+    "passed": 318,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "counts_available": true,
+    "wall_s": 96.3
+  },
+  "sections": {
+    "reproducibility": {
+      "kind": "implementation_check",
+      "passed": true,
+      "errors": [],
+      "protocol_version": "2.1",
+      "config_hash": "c76394bf7eaa9005",
+      "train_episodes": 500,
+      "n_train_seeds": 10,
+      "eval_scenarios": 20,
+      "protocols": [
+        {
+          "label": "current",
+          "protocol_version": "2.1",
+          "manifest_config_hash": "c76394bf7eaa9005",
+          "recomputed_config_hash": "c76394bf7eaa9005",
+          "hash_reproduced": true,
+          "n_train_seeds": 10,
+          "train_episodes": 500,
+          "manifest_errors": [],
+          "yaml_file_sha256_16": {
+            "ablations.yaml": "13f9b8e06c5c1f5f",
+            "acoustic_channel.yaml": "94c62006f187ce4e",
+            "default.yaml": "cc29cc36e94138e7",
+            "environment.yaml": "a8bf2f2027f59dc3",
+            "federated_learning.yaml": "3ffc04798df2a630",
+            "matd3.yaml": "ca353ab1621a6f43",
+            "reward.yaml": "b05ad5eb245a7777",
+            "semantic_model.yaml": "e3fa0eda5d2b6e17",
+            "smoke.yaml": "c2a48f7b92cc83ff",
+            "task_allocation.yaml": "4a73919396cb97cc"
+          }
+        },
+        {
+          "label": "v2.0",
+          "protocol_version": "2.0",
+          "manifest_config_hash": "7f4a0e4f66569528",
+          "recomputed_config_hash": "7f4a0e4f66569528",
+          "hash_reproduced": true,
+          "n_train_seeds": 5,
+          "train_episodes": 500,
+          "manifest_errors": [],
+          "yaml_file_sha256_16": {
+            "ablations.yaml": "13f9b8e06c5c1f5f",
+            "acoustic_channel.yaml": "94c62006f187ce4e",
+            "default.yaml": "5e5dc2552defcf96",
+            "environment.yaml": "a8bf2f2027f59dc3",
+            "federated_learning.yaml": "600648f2455e8095",
+            "matd3.yaml": "ca353ab1621a6f43",
+            "reward.yaml": "b05ad5eb245a7777",
+            "semantic_model.yaml": "e3fa0eda5d2b6e17",
+            "smoke.yaml": "c2a48f7b92cc83ff",
+            "task_allocation.yaml": "4a73919396cb97cc"
+          }
+        }
+      ],
+      "decision": "train_episodes=500 (Paper 2 Table I); 200 had no source -- see protocol_changelog"
+    },
+    "lifecycle": {
+      "kind": "implementation_check",
+      "passed": true,
+      "scenarios": {
+        "delayed_upload": {
+          "passed": true,
+          "n_checks": 18,
+          "failed": [],
+          "details": {
+            "staleness": [
+              1
+            ],
+            "latency_s": 6.0
+          }
+        },
+        "stale_rejection": {
+          "passed": true,
+          "n_checks": 15,
+          "failed": [],
+          "details": {
+            "reason": "stale_at_receipt"
+          }
+        },
+        "server_rejection": {
+          "passed": true,
+          "n_checks": 15,
+          "failed": [],
+          "details": {}
+        },
+        "update_expiration": {
+          "passed": true,
+          "n_checks": 32,
+          "failed": [],
+          "details": {}
+        },
+        "duplicate_delivery": {
+          "passed": true,
+          "n_checks": 17,
+          "failed": [],
+          "details": {}
+        },
+        "client_reconnection": {
+          "passed": true,
+          "n_checks": 22,
+          "failed": [],
+          "details": {}
+        },
+        "asynchronous_aggregation": {
+          "passed": true,
+          "n_checks": 16,
+          "failed": [],
+          "details": {
+            "rounds": 7,
+            "avg_staleness": 0.45454545454545453
+          }
+        },
+        "episode_transition": {
+          "passed": true,
+          "n_checks": 15,
+          "failed": [],
+          "details": {
+            "log": [
+              [
+                "c0-u1",
+                "expired",
+                "discarded_episode"
+              ],
+              [
+                "c1-u1",
+                "expired",
+                "discarded_episode"
+              ]
+            ]
+          }
+        }
+      },
+      "retry_backoff_impact": {
+        "horizon_s": 600,
+        "heal_at_s": 100,
+        "p_tx_elec_w": 30.0,
+        "runs": {
+          "no_backoff_protocol_2_0": {
+            "uploads": 26,
+            "rejected": 25,
+            "rejected_bytes": 13000.0,
+            "uplink_bytes": 13520.0,
+            "tx_airtime_s": 0.2163199999999999,
+            "tx_energy_j": 6.489599999999997,
+            "retry_attempts": 25,
+            "retry_deferred_updates": 0,
+            "first_commit_t_s": 103,
+            "recovery_latency_after_heal_s": 3,
+            "invariants_hold": true
+          },
+          "backoff_protocol_2_1": {
+            "uploads": 2,
+            "rejected": 1,
+            "rejected_bytes": 520.0,
+            "uplink_bytes": 1040.0,
+            "tx_airtime_s": 0.01664,
+            "tx_energy_j": 0.4992,
+            "retry_attempts": 1,
+            "retry_deferred_updates": 1,
+            "first_commit_t_s": 126,
+            "recovery_latency_after_heal_s": 26,
+            "invariants_hold": true
+          }
+        },
+        "bytes_ratio_backoff_over_none": 0.07692307692307693,
+        "energy_saved_j": 5.990399999999997,
+        "extra_recovery_latency_s": 23,
+        "interpretation": "back-off trades a bounded extra recovery latency after a transient failure (at most the current back-off delay, <= federated.retry.max_s) for a large cut in wasted full-model uploads and transmit energy under persistent rejection; it never changes the update lifecycle, the reference model or the progress counters"
+      }
+    },
+    "relevance": {
+      "kind": "implementation_check",
+      "passed": true,
+      "auv1_example": {
+        "batch_B1": {
+          "collected_by": 1,
+          "t_collect": 100.0,
+          "t_deliver": 250.0,
+          "units": 10,
+          "sigma": 0.8,
+          "c": 2.0,
+          "mu": 0.01,
+          "V": 16.0,
+          "U_delivered": 3.3959675812278887
+        },
+        "batch_B0": {
+          "collected_by": 0,
+          "t_collect": 235.0,
+          "t_deliver": 255.0,
+          "V": 3.0,
+          "U_delivered": 2.3364023492142145
+        },
+        "claim_AUV1": {
+          "U_mature": 3.3959675812278887,
+          "V_mature": 16.0,
+          "units_del_mature": 10.0,
+          "units_coll_mature": 10.0,
+          "n_mature_batches": 1.0,
+          "n_immature_batches": 0.0
+        },
+        "claim_AUV0": {
+          "U_mature": 2.3364023492142145,
+          "V_mature": 3.0,
+          "units_del_mature": 6.0,
+          "units_coll_mature": 6.0,
+          "n_mature_batches": 1.0,
+          "n_immature_batches": 0.0
+        },
+        "rho_sem_AUV1": 0.21224797382674304,
+        "rho_sem_AUV0": 0.7788007830714049,
+        "AUV0_received_none_of_B1": true,
+        "AUV1_credited_with_B1_only": true,
+        "closed_form_rho_AUV1": 0.21224797382674304,
+        "legacy_window_ratio_AUV1": {
+          "AUV1 window [0,200): V_coll=16, U_del=0 ->": 0.0,
+          "AUV1 window [200,400): V_coll=0 (nothing collected), U_del=3.3960 -> den=0 -> 0 (delivery ignored)": 0.0
+        }
+      },
+      "mass_balance_real_env": {
+        "eps": 0.05,
+        "scenarios": [
+          {
+            "scenario": 0,
+            "U_ledger": 21507.80810749489,
+            "U_book": 21507.808107494915,
+            "U_abs_err": 2.546585164964199e-11,
+            "per_auv_abs_err": 5.275069270282984e-11,
+            "delivered_units_env": 215875.0,
+            "delivered_units_book": 215875.0,
+            "collected_units_env": 216125.0,
+            "bounds_ok": true,
+            "n_claims": 33,
+            "late_units": 0.0
+          },
+          {
+            "scenario": 1,
+            "U_ledger": 21509.835667375257,
+            "U_book": 21509.835667375137,
+            "U_abs_err": 1.2005330063402653e-10,
+            "per_auv_abs_err": 3.3651303965598345e-11,
+            "delivered_units_env": 203250.0,
+            "delivered_units_book": 203250.0,
+            "collected_units_env": 223000.0,
+            "bounds_ok": true,
+            "n_claims": 33,
+            "late_units": 2782.0
+          },
+          {
+            "scenario": 2,
+            "U_ledger": 25903.822732328346,
+            "U_book": 25903.82273232851,
+            "U_abs_err": 1.6370904631912708e-10,
+            "per_auv_abs_err": 3.2741809263825417e-11,
+            "delivered_units_env": 213750.0,
+            "delivered_units_book": 213750.0,
+            "collected_units_env": 216375.0,
+            "bounds_ok": true,
+            "n_claims": 33,
+            "late_units": 664.0
+          }
+        ],
+        "passed": true
+      },
+      "weight_stability": {
+        "eps_m": 0.1,
+        "eta": 1.0,
+        "max_client_weight": 0.8,
+        "relevance_factor_range": [
+          0.1,
+          1.0
+        ],
+        "max_relative_weight_change_from_relevance_alone": 10.0,
+        "analytic_bound_abs_dw_dM_nocap": 2.25,
+        "empirical_max_abs_dw_dM_nocap": 1.2096535915414808,
+        "empirical_max_abs_dw_dM_with_cap": 1.2096535915414808,
+        "weights_valid_everywhere": true,
+        "bounded": true
+      },
+      "maturity_sensitivity": {
+        "policy": "goal_seeking_reference_controller (scripted, no learning)",
+        "scenarios": [
+          0,
+          1,
+          2
+        ],
+        "claim_every_steps": 100,
+        "reference_eps": 0.05,
+        "rows": [
+          {
+            "eps": 0.01,
+            "horizon_factor_ln_1_over_eps": 4.605170185988092,
+            "pooled_rho_sem": 0.11207501533165252,
+            "mean_claim_rho_sem": 0.12118094186918921,
+            "n_defined_claims": 90,
+            "mature_batches": 96652,
+            "mature_value_V": 614958.3500000001,
+            "censored_value_V": 18371.25,
+            "censored_share_of_value": 0.029007407833140906,
+            "late_units_not_reattributed": 1057.0,
+            "late_units_share_of_mature_units": 0.0016633802972053008,
+            "across_auv_pooled_rho_sem": {
+              "min": 0.09121771692351557,
+              "max": 0.14078896508898123
+            },
+            "spearman_vs_reference_eps": 0.9991110013581924
+          },
+          {
+            "eps": 0.02,
+            "horizon_factor_ln_1_over_eps": 3.912023005428146,
+            "pooled_rho_sem": 0.11184947221778037,
+            "mean_claim_rho_sem": 0.12116326381095477,
+            "n_defined_claims": 90,
+            "mature_batches": 96830,
+            "mature_value_V": 616198.3500000001,
+            "censored_value_V": 17131.25,
+            "censored_share_of_value": 0.027049501554956532,
+            "late_units_not_reattributed": 1711.0,
+            "late_units_share_of_mature_units": 0.0026904673173477746,
+            "across_auv_pooled_rho_sem": {
+              "min": 0.0912177096334484,
+              "max": 0.1407888974907455
+            },
+            "spearman_vs_reference_eps": 0.9993250195497385
+          },
+          {
+            "eps": 0.05,
+            "horizon_factor_ln_1_over_eps": 2.995732273553991,
+            "pooled_rho_sem": 0.11179195649947875,
+            "mean_claim_rho_sem": 0.12101768375760667,
+            "n_defined_claims": 90,
+            "mature_batches": 96840,
+            "mature_value_V": 616510.8500000001,
+            "censored_value_V": 16818.75,
+            "censored_share_of_value": 0.02655607759372055,
+            "late_units_not_reattributed": 3446.0,
+            "late_units_share_of_mature_units": 0.005417608643019523,
+            "across_auv_pooled_rho_sem": {
+              "min": 0.09121357260234426,
+              "max": 0.14078689262750863
+            },
+            "spearman_vs_reference_eps": 1.0
+          },
+          {
+            "eps": 0.1,
+            "horizon_factor_ln_1_over_eps": 2.302585092994046,
+            "pooled_rho_sem": 0.11156258014009522,
+            "mean_claim_rho_sem": 0.11993062007789454,
+            "n_defined_claims": 90,
+            "mature_batches": 96888,
+            "mature_value_V": 617778.3500000001,
+            "censored_value_V": 15551.25,
+            "censored_share_of_value": 0.024554750006947405,
+            "late_units_not_reattributed": 4552.0,
+            "late_units_share_of_mature_units": 0.0071507003821980235,
+            "across_auv_pooled_rho_sem": {
+              "min": 0.09121357246640087,
+              "max": 0.1407868022221105
+            },
+            "spearman_vs_reference_eps": 0.9915051240893936
+          },
+          {
+            "eps": 0.2,
+            "horizon_factor_ln_1_over_eps": 1.6094379124341003,
+            "pooled_rho_sem": 0.11104463933162297,
+            "mean_claim_rho_sem": 0.1192472750454351,
+            "n_defined_claims": 90,
+            "mature_batches": 97117,
+            "mature_value_V": 620585.8500000001,
+            "censored_value_V": 12743.75,
+            "censored_share_of_value": 0.020121829139203344,
+            "late_units_not_reattributed": 6717.0,
+            "late_units_share_of_mature_units": 0.010511391644406053,
+            "across_auv_pooled_rho_sem": {
+              "min": 0.09112229441279567,
+              "max": 0.14077657872678292
+            },
+            "spearman_vs_reference_eps": 0.97476231633535
+          },
+          {
+            "eps": 0.5,
+            "horizon_factor_ln_1_over_eps": 0.6931471805599453,
+            "pooled_rho_sem": 0.10953762259979438,
+            "mean_claim_rho_sem": 0.1179730125749384,
+            "n_defined_claims": 90,
+            "mature_batches": 98488,
+            "mature_value_V": 626251.8500000001,
+            "censored_value_V": 7077.750000000002,
+            "censored_share_of_value": 0.011175460613241511,
+            "late_units_not_reattributed": 19362.0,
+            "late_units_share_of_mature_units": 0.029993261507718284,
+            "across_auv_pooled_rho_sem": {
+              "min": 0.0874117604060021,
+              "max": 0.13942948360911142
+            },
+            "spearman_vs_reference_eps": 0.960423097501749
+          }
+        ],
+        "note": "Descriptive only. Smaller eps = longer wait before a batch is judged = fewer, later, but better-resolved claims."
+      },
+      "maturity_default_chosen_a_priori": 0.05,
+      "maturity_pooled_rho_range": [
+        0.10953762259979438,
+        0.11207501533165252
+      ],
+      "dynamic_range_reference_policies": {
+        "kind": "measurement (descriptive, no learning)",
+        "goal_seeking": {
+          "policy": "goal_seeking",
+          "window_steps": 100,
+          "scenarios": [
+            0,
+            1,
+            2
+          ],
+          "n_windows": 30,
+          "M_quantiles_5_50_95": [
+            0.4686704752741491,
+            0.5394463071384692,
+            0.6339244599498355
+          ],
+          "M_min_max": [
+            0.45266970427859055,
+            0.7222236201483788
+          ],
+          "fraction_M_zero": 0.0,
+          "within_window_spread_of_M_max_minus_min": [
+            0.020355093197512008,
+            0.04876238437295094,
+            0.10439058928810374
+          ],
+          "factor_g_spread_max_over_min": [
+            1.0303542793410985,
+            1.0772465200870276,
+            1.1726567035219335
+          ],
+          "equal_n_no_staleness_weight_TV_vs_uniform": [
+            0.005640553874869172,
+            0.01491062653050558,
+            0.033598195952621965
+          ],
+          "fraction_components_defined": {
+            "rho_sem": 1.0,
+            "rho_svc": 1.0
+          },
+          "note": "reference-policy measurement, not a learning result; TV is vs uniform weights because n and staleness are equal here"
+        },
+        "zero": {
+          "policy": "zero",
+          "window_steps": 100,
+          "scenarios": [
+            0,
+            1,
+            2
+          ],
+          "n_windows": 30,
+          "M_quantiles_5_50_95": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "M_min_max": [
+            0.0,
+            0.0
+          ],
+          "fraction_M_zero": 1.0,
+          "within_window_spread_of_M_max_minus_min": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "factor_g_spread_max_over_min": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "equal_n_no_staleness_weight_TV_vs_uniform": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "fraction_components_defined": {
+            "rho_sem": 0.0,
+            "rho_svc": 0.9333333333333333
+          },
+          "note": "reference-policy measurement, not a learning result; TV is vs uniform weights because n and staleness are equal here"
+        }
+      }
+    },
+    "matd3_and_federation": {
+      "kind": "implementation_check",
+      "passed": true,
+      "checks": {
+        "check_twin_critic_target": {
+          "passed": true,
+          "checks": {
+            "target_equals_independent_recomputation": true,
+            "uses_min_not_mean": true,
+            "twin_critics_are_distinct_networks": true,
+            "terminal_transition_does_not_bootstrap": true
+          }
+        },
+        "check_target_policy_smoothing": {
+          "passed": true,
+          "checks": {
+            "noise_clipped_to_c": true,
+            "actions_within_box": true,
+            "noise_is_applied_stochastically_by_default": true,
+            "all_agents_use_target_actors": true
+          }
+        },
+        "check_delayed_actor_and_polyak": {
+          "passed": true,
+          "checks": {
+            "policy_delay": 2,
+            "actor_and_targets_frozen_between_delayed_updates": true,
+            "actor_updated_exactly_at_delay": true,
+            "actor_target_is_exact_polyak": true,
+            "critic_target_is_exact_polyak": true,
+            "tau0_leaves_target_unchanged": true,
+            "tau1_copies_source": true
+          }
+        },
+        "check_critic_loss_and_gradient_paths": {
+          "passed": true,
+          "checks": {
+            "critic_updated": true,
+            "actor_loss_reported": true,
+            "other_agents_actor_not_touched_by_this_agents_update": true,
+            "all_losses_finite": true
+          }
+        },
+        "check_actor_only_federation": {
+          "passed": true,
+          "checks": {
+            "critic_unchanged": true,
+            "critic_target_unchanged": true,
+            "critic_optimiser_state_unchanged": true,
+            "actor_optimiser_state_not_reset_(documented)": true,
+            "federated_vector_is_actor_size_only": true,
+            "actor_equals_global_with_blend_1": true,
+            "actor_target_synchronised_to_actor": true,
+            "reference_equals_installed_global": true,
+            "counters_reset_on_install": true
+          }
+        },
+        "check_install_is_inplace_and_blend": {
+          "passed": true,
+          "checks": {
+            "in_place_so_trainer_target_actor_list_stays_valid": true,
+            "blend_is_convex_combination": true
+          }
+        },
+        "check_aggregation_integrity": {
+          "passed": true,
+          "checks": {
+            "clip_norm_default": 5.0,
+            "huge_update_is_clipped": true,
+            "step_bounded_by_server_lr_times_C": true,
+            "result_finite": true,
+            "inf_update_refused_and_global_untouched": true,
+            "without_clip_a_huge_finite_update_is_accepted_(documented_risk)": true
+          }
+        },
+        "check_staleness_semantics": {
+          "passed": true,
+          "checks": {
+            "staleness_is_version_difference": true,
+            "factor_is_exp_minus_kappa_delta": true,
+            "factor_is_one_at_zero_and_monotone": true,
+            "negative_staleness_rejected": true,
+            "gate_inclusive_at_max_exclusive_above": true
+          }
+        },
+        "check_parameters_finite_after_training": {
+          "passed": true,
+          "checks": {
+            "all_networks_finite": true,
+            "all_references_finite": true,
+            "global_actor_finite": true,
+            "aggregation_rounds": 6,
+            "gradient_steps": 303,
+            "global_actor_differs_from_initial": true
+          }
+        }
+      }
+    },
+    "baseline_fairness": {
+      "kind": "implementation_check",
+      "passed": true,
+      "checks": {
+        "only_declared_keys_differ_per_method": true,
+        "no_method_changes_environment_traffic_energy_channel_semantic_reward_seed_or_experiment_sections": true,
+        "identical_scenario_layout_arrivals_obs_act_state_dims_for_all_methods": true,
+        "same_env_step_budget_for_all_methods": true,
+        "same_eval_scenarios_for_all_methods": true,
+        "observation_and_action_spaces_identical": true,
+        "train_and_eval_scenario_seeds_disjoint": true,
+        "training_seeds_use_distinct_scenario_offsets": true,
+        "matd3_family_same_gradient_budget_except_none": true,
+        "every_method_has_comparability_attributes": true,
+        "comparability_attributes_match_built_configs": true
+      },
+      "methods": [
+        {
+          "method": "greedy_matd3",
+          "trainer": "matd3",
+          "changed_keys": [
+            "allocation.method",
+            "federated.enabled"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": false,
+          "aggregation": null,
+          "allocation": "greedy",
+          "critic_mode": "centralized",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "own actors",
+          "deployment": "per_auv_local_actors"
+        },
+        {
+          "method": "hungarian_matd3",
+          "trainer": "matd3",
+          "changed_keys": [
+            "allocation.method",
+            "federated.enabled"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": false,
+          "aggregation": null,
+          "allocation": "hungarian_priority",
+          "critic_mode": "centralized",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "own actors",
+          "deployment": "per_auv_local_actors"
+        },
+        {
+          "method": "centralized_matd3",
+          "trainer": "matd3",
+          "changed_keys": [
+            "federated.enabled"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": false,
+          "aggregation": null,
+          "allocation": "sta",
+          "critic_mode": "centralized",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "own actors",
+          "deployment": "per_auv_local_actors"
+        },
+        {
+          "method": "independent_td3",
+          "trainer": "matd3",
+          "changed_keys": [
+            "federated.enabled",
+            "matd3.critic_mode"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": false,
+          "aggregation": null,
+          "allocation": "sta",
+          "critic_mode": "independent",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "own actors",
+          "deployment": "per_auv_local_actors"
+        },
+        {
+          "method": "maddpg",
+          "trainer": "matd3",
+          "changed_keys": [
+            "federated.enabled",
+            "matd3.policy_delay",
+            "matd3.target_noise",
+            "matd3.twin"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": false,
+          "aggregation": null,
+          "allocation": "sta",
+          "critic_mode": "centralized",
+          "twin": false,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "own actors",
+          "deployment": "per_auv_local_actors"
+        },
+        {
+          "method": "mappo",
+          "trainer": "mappo",
+          "changed_keys": [
+            "federated.enabled"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": false,
+          "aggregation": null,
+          "allocation": "sta",
+          "critic_mode": "centralized",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 16000,
+          "eval_scenarios": 20,
+          "eval_policy": "own actors",
+          "deployment": "shared_actor"
+        },
+        {
+          "method": "fedavg_matd3",
+          "trainer": "matd3",
+          "changed_keys": [
+            "federated.aggregation",
+            "federated.clip_norm",
+            "federated.max_client_weight"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": true,
+          "aggregation": "fedavg",
+          "allocation": "sta",
+          "critic_mode": "centralized",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "global actor",
+          "deployment": "global_federated_actor"
+        },
+        {
+          "method": "stale_fedmatd3",
+          "trainer": "matd3",
+          "changed_keys": [
+            "federated.aggregation"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": true,
+          "aggregation": "stale",
+          "allocation": "sta",
+          "critic_mode": "centralized",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "global actor",
+          "deployment": "global_federated_actor"
+        },
+        {
+          "method": "semantic_fedmatd3",
+          "trainer": "matd3",
+          "changed_keys": [
+            "federated.aggregation"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": true,
+          "aggregation": "semantic",
+          "allocation": "sta",
+          "critic_mode": "centralized",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "global actor",
+          "deployment": "global_federated_actor"
+        },
+        {
+          "method": "service_fedmatd3",
+          "trainer": "matd3",
+          "changed_keys": [
+            "federated.aggregation"
+          ],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": true,
+          "aggregation": "service",
+          "allocation": "sta",
+          "critic_mode": "centralized",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "global actor",
+          "deployment": "global_federated_actor"
+        },
+        {
+          "method": "s3a_fedmatd3",
+          "trainer": "matd3",
+          "changed_keys": [],
+          "undeclared_changes": [],
+          "changed_protected_sections": [],
+          "federated": true,
+          "aggregation": "s3a",
+          "allocation": "sta",
+          "critic_mode": "centralized",
+          "twin": true,
+          "env_step_budget": 500000,
+          "gradient_updates_per_agent_or_minibatch": 499500,
+          "eval_scenarios": 20,
+          "eval_policy": "global actor",
+          "deployment": "global_federated_actor"
+        }
+      ],
+      "non_equivalent": [
+        {
+          "id": "N1",
+          "methods": [
+            "greedy_matd3",
+            "hungarian_matd3"
+          ],
+          "aspect": "task allocation",
+          "detail": "Different allocator by design (Paper-2 greedy / Hungarian on the priority matrix). All other methods use the proposed STA allocator, so only learning differs for them.",
+          "can_equalise": false
+        },
+        {
+          "id": "N2",
+          "methods": [
+            "mappo"
+          ],
+          "aspect": "gradient-update budget",
+          "detail": "Same environment-step budget, but MAPPO does epochs x 4 minibatch steps per 500-step rollout (~16 minibatch updates per 1000 env steps) versus one gradient step per env step per agent for the MATD3 family. On-policy data cannot be replayed, so the update budgets cannot be equalised without changing the algorithm.",
+          "can_equalise": false
+        },
+        {
+          "id": "N3",
+          "methods": [
+            "mappo"
+          ],
+          "aspect": "policy class / exploration",
+          "detail": "Shared Gaussian actor with learned log-std and entropy bonus; MATD3 family uses per-AUV deterministic actors with additive Gaussian noise on a decay schedule. Evaluation is deterministic (mean action) for all.",
+          "can_equalise": false
+        },
+        {
+          "id": "N4",
+          "methods": [
+            "mappo"
+          ],
+          "aspect": "parameter sharing",
+          "detail": "MAPPO shares ONE actor across AUVs for training and evaluation (value input adds an AUV one-hot).",
+          "can_equalise": false
+        },
+        {
+          "id": "N5",
+          "methods": [
+            "fedavg_matd3",
+            "stale_fedmatd3",
+            "semantic_fedmatd3",
+            "service_fedmatd3",
+            "s3a_fedmatd3"
+          ],
+          "aspect": "deployed policy",
+          "detail": "Federated methods are scored with the single GLOBAL actor deployed to every AUV (headline `global`); non-federated MATD3-family methods are scored with each AUV's own actor. Local-actor scores of federated methods are also stored (`local`).",
+          "can_equalise": false
+        },
+        {
+          "id": "N6",
+          "methods": [
+            "fedavg_matd3",
+            "stale_fedmatd3",
+            "semantic_fedmatd3",
+            "service_fedmatd3",
+            "s3a_fedmatd3"
+          ],
+          "aspect": "initialisation",
+          "detail": "Federated methods start from a common initial actor (agent 0's initialisation copied to all AUVs, as in FL); non-federated methods use independent per-AUV initialisations from the same seed stream.",
+          "can_equalise": true,
+          "note": "Equalising would make independent initialisation the only difference; kept as is (standard FL practice) and documented."
+        },
+        {
+          "id": "N7",
+          "methods": [
+            "fedavg_matd3",
+            "stale_fedmatd3",
+            "semantic_fedmatd3",
+            "service_fedmatd3",
+            "s3a_fedmatd3"
+          ],
+          "aspect": "model-traffic cost",
+          "detail": "Federated methods spend acoustic airtime and communication energy on model transfers (part of the proposed trade-off); non-federated methods spend none. This is intended and is reported in the comm/energy metrics.",
+          "can_equalise": false
+        },
+        {
+          "id": "N8",
+          "methods": [
+            "centralized_matd3",
+            "maddpg",
+            "mappo",
+            "greedy_matd3",
+            "hungarian_matd3"
+          ],
+          "aspect": "information at training time",
+          "detail": "Centralised critics read the simulator global state (CTDE) and, for MATD3/MADDPG, the other agents' target actors and the shared joint replay store, i.e. training is NOT communication-constrained for these methods and is also not constrained for the federated methods' critics (only their ACTORS are communicated). Execution uses local observations only for every method.",
+          "can_equalise": false
+        },
+        {
+          "id": "N9",
+          "methods": [
+            "independent_td3"
+          ],
+          "aspect": "critic information",
+          "detail": "Independent TD3 critic sees only (o_i, a_i): intentionally less information (baseline definition).",
+          "can_equalise": false
+        },
+        {
+          "id": "N10",
+          "methods": [
+            "maddpg"
+          ],
+          "aspect": "TD3 stabilisers",
+          "detail": "MADDPG disables twin critics, delayed actor updates and target smoothing by definition.",
+          "can_equalise": false
+        }
+      ],
+      "comparability_matrix": {
+        "greedy_matd3": {
+          "hungarian_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "fedavg_matd3": "NOT_like_for_like",
+          "stale_fedmatd3": "NOT_like_for_like",
+          "semantic_fedmatd3": "NOT_like_for_like",
+          "service_fedmatd3": "NOT_like_for_like",
+          "s3a_fedmatd3": "NOT_like_for_like"
+        },
+        "hungarian_matd3": {
+          "greedy_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "fedavg_matd3": "NOT_like_for_like",
+          "stale_fedmatd3": "NOT_like_for_like",
+          "semantic_fedmatd3": "NOT_like_for_like",
+          "service_fedmatd3": "NOT_like_for_like",
+          "s3a_fedmatd3": "NOT_like_for_like"
+        },
+        "centralized_matd3": {
+          "greedy_matd3": "NOT_like_for_like",
+          "hungarian_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "fedavg_matd3": "NOT_like_for_like",
+          "stale_fedmatd3": "NOT_like_for_like",
+          "semantic_fedmatd3": "NOT_like_for_like",
+          "service_fedmatd3": "NOT_like_for_like",
+          "s3a_fedmatd3": "NOT_like_for_like"
+        },
+        "independent_td3": {
+          "greedy_matd3": "NOT_like_for_like",
+          "hungarian_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "fedavg_matd3": "NOT_like_for_like",
+          "stale_fedmatd3": "NOT_like_for_like",
+          "semantic_fedmatd3": "NOT_like_for_like",
+          "service_fedmatd3": "NOT_like_for_like",
+          "s3a_fedmatd3": "NOT_like_for_like"
+        },
+        "maddpg": {
+          "greedy_matd3": "NOT_like_for_like",
+          "hungarian_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "fedavg_matd3": "NOT_like_for_like",
+          "stale_fedmatd3": "NOT_like_for_like",
+          "semantic_fedmatd3": "NOT_like_for_like",
+          "service_fedmatd3": "NOT_like_for_like",
+          "s3a_fedmatd3": "NOT_like_for_like"
+        },
+        "mappo": {
+          "greedy_matd3": "NOT_like_for_like",
+          "hungarian_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "fedavg_matd3": "NOT_like_for_like",
+          "stale_fedmatd3": "NOT_like_for_like",
+          "semantic_fedmatd3": "NOT_like_for_like",
+          "service_fedmatd3": "NOT_like_for_like",
+          "s3a_fedmatd3": "NOT_like_for_like"
+        },
+        "fedavg_matd3": {
+          "greedy_matd3": "NOT_like_for_like",
+          "hungarian_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "stale_fedmatd3": "like_for_like_weighting_only",
+          "semantic_fedmatd3": "like_for_like_weighting_only",
+          "service_fedmatd3": "like_for_like_weighting_only",
+          "s3a_fedmatd3": "like_for_like_weighting_only"
+        },
+        "stale_fedmatd3": {
+          "greedy_matd3": "NOT_like_for_like",
+          "hungarian_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "fedavg_matd3": "like_for_like_weighting_only",
+          "semantic_fedmatd3": "like_for_like_weighting_only",
+          "service_fedmatd3": "like_for_like_weighting_only",
+          "s3a_fedmatd3": "like_for_like_weighting_only"
+        },
+        "semantic_fedmatd3": {
+          "greedy_matd3": "NOT_like_for_like",
+          "hungarian_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "fedavg_matd3": "like_for_like_weighting_only",
+          "stale_fedmatd3": "like_for_like_weighting_only",
+          "service_fedmatd3": "like_for_like_weighting_only",
+          "s3a_fedmatd3": "like_for_like_weighting_only"
+        },
+        "service_fedmatd3": {
+          "greedy_matd3": "NOT_like_for_like",
+          "hungarian_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "fedavg_matd3": "like_for_like_weighting_only",
+          "stale_fedmatd3": "like_for_like_weighting_only",
+          "semantic_fedmatd3": "like_for_like_weighting_only",
+          "s3a_fedmatd3": "like_for_like_weighting_only"
+        },
+        "s3a_fedmatd3": {
+          "greedy_matd3": "NOT_like_for_like",
+          "hungarian_matd3": "NOT_like_for_like",
+          "centralized_matd3": "NOT_like_for_like",
+          "independent_td3": "NOT_like_for_like",
+          "maddpg": "NOT_like_for_like",
+          "mappo": "NOT_like_for_like",
+          "fedavg_matd3": "like_for_like_weighting_only",
+          "stale_fedmatd3": "like_for_like_weighting_only",
+          "semantic_fedmatd3": "like_for_like_weighting_only",
+          "service_fedmatd3": "like_for_like_weighting_only"
+        }
+      },
+      "n_pairs_like_for_like": 10,
+      "n_pairs_total": 55,
+      "statement": "The 11 methods are NOT equivalent: numeric equivalence holds only for observations, action constraints, environment, step budget, evaluation scenarios and seeds. Deployment, trainer, allocator and information differences are declared.",
+      "gradient_budget_ratio_matd3_to_mappo_minibatches": 31.21875
+    },
+    "statistics": {
+      "kind": "implementation_check",
+      "passed": true,
+      "checks": {
+        "paired_t_matches_scipy": true,
+        "paired_wilcoxon_matches_scipy": true,
+        "ci_of_mean_difference_contains_estimate_and_is_ordered": true,
+        "hedges_g_smaller_in_magnitude_than_cohens_d": true,
+        "constant_difference_gives_nan_p_not_zero": true,
+        "holm_not_smaller_than_raw_and_capped_at_one": true,
+        "holm_matches_manual_computation": true,
+        "holm_preserves_nan": true,
+        "wilcoxon_min_p_is_exact_two_to_one_minus_n": true,
+        "exact_wilcoxon_attains_the_stated_minimum": true,
+        "unmatched_seed_sets_are_skipped_not_mispaired": true,
+        "seeds_matched_by_key_not_by_position": true,
+        "design_report_consistent_with_min_p": true
+      },
+      "design": {
+        "n_seeds": 10,
+        "n_comparisons_per_metric": 10,
+        "alpha": 0.05,
+        "wilcoxon_min_attainable_p": 0.001953125,
+        "wilcoxon_can_reach_alpha_uncorrected": true,
+        "wilcoxon_can_reach_alpha_after_holm": true,
+        "seeds_needed_for_holm_wilcoxon": 9,
+        "seeds_needed_for_uncorrected_wilcoxon": 6
+      },
+      "design_adequacy": {
+        "kind": "attainability_only",
+        "holm_corrected_wilcoxon_attainable": true,
+        "statement": "Attainable means the exact test CAN return p <= alpha/k at this seed count if every paired difference has the same sign. It does NOT mean it will, and it says nothing about statistical power for any realistic effect size. Power depends on the unknown between-seed variance and effect sizes and is not estimated here. No result is implied or guaranteed by the seed count."
+      },
+      "tests": "paired t (+CI of the difference, Cohen d_z, Hedges g) and exact/approx Wilcoxon on matched training seeds; Holm-Bonferroni per metric and per test; degenerate (constant) differences give NaN p-values"
+    },
+    "training_probe": {
+      "method": "s3a_fedmatd3",
+      "episodes": 3,
+      "episode_steps": 1000,
+      "wall_s": 31.7498517036438,
+      "sec_per_episode": 10.5832839012146,
+      "gradient_steps_total": 7503,
+      "updates_created": 12,
+      "aggregated": 12,
+      "rejected": 0,
+      "expired": 0,
+      "unresolved": 0,
+      "stats_discarded_episode": 0,
+      "comm_tx_s_per_upload": 24.742400000000004,
+      "tx_energy_j_per_upload_incl_acks": 742.2720000000002,
+      "model_bytes_per_upload": 77320.0,
+      "aggregation_rounds": 7,
+      "single_update_rounds": 3,
+      "single_update_round_fraction": 0.42857142857142855,
+      "avg_staleness": 0.25,
+      "link_up_fraction": 0.9245555555555556,
+      "bytes_total": 2553096.0,
+      "relevance_min_mean_max": [
+        0.0,
+        0.01157751699856506,
+        0.13893020398278072
+      ],
+      "weights_min_mean_max": [
+        0.3333333333333333,
+        0.5833333333333334,
+        1.0
+      ],
+      "accounting_balanced": true,
+      "all_params_finite": true,
+      "return_mean_per_episode": [
+        -412.0494564194232,
+        -469.51405980810523,
+        -363.1643638865401
+      ],
+      "aggregation_diagnostics": {
+        "n_rounds": 7,
+        "participants_per_round": {
+          "mean": 1.7142857142857142,
+          "histogram": {
+            "1": 3,
+            "2": 3,
+            "3": 1
+          }
+        },
+        "single_update_rounds": 3,
+        "single_update_round_fraction": 0.42857142857142855,
+        "multi_update_rounds": 4,
+        "relevance_M": {
+          "all_updates_min_mean_max": [
+            0.0,
+            0.01157751699856506,
+            0.13893020398278072
+          ],
+          "multi_rounds_quantiles_5_50_95": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "relevance_factor_g": {
+          "floor_eps_m": 0.1,
+          "possible_range": [
+            0.1,
+            1.0
+          ],
+          "observed_range": [
+            0.1,
+            0.22503718358450267
+          ],
+          "within_round_spread_max_over_min": {
+            "quantiles_5_50_95": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max": 1.0
+          }
+        },
+        "weight_variance_shares_multi_rounds": {
+          "sample_count": null,
+          "staleness": null,
+          "relevance": null
+        },
+        "counterfactual_relevance_effect": {
+          "weight_total_variation": {
+            "mean": 0.0,
+            "quantiles_5_50_95": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": 0.0
+          },
+          "relative_update_change_L2": {
+            "mean": 0.0,
+            "quantiles_5_50_95": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": 0.0
+          },
+          "note": "relevance changes the applied update by this relative L2 amount versus the same round with relevance factor == 1"
+        },
+        "weight_entropy_per_round": {
+          "mean": 0.45400769004970654,
+          "std": 0.41497798981173056
+        },
+        "per_client": {
+          "0": {
+            "rounds_participated": 4,
+            "relevance_mean": 0.0,
+            "relevance_min": 0.0,
+            "relevance_max": 0.0,
+            "weight_mean": 0.7083333333333333,
+            "weight_std": 0.2975595178559521,
+            "weight_cv": 0.420084025208403
+          },
+          "1": {
+            "rounds_participated": 4,
+            "relevance_mean": 0.0,
+            "relevance_min": 0.0,
+            "relevance_max": 0.0,
+            "weight_mean": 0.4583333333333333,
+            "weight_std": 0.07216878364870323,
+            "weight_cv": 0.15745916432444343
+          },
+          "2": {
+            "rounds_participated": 4,
+            "relevance_mean": 0.03473255099569518,
+            "relevance_min": 0.0,
+            "relevance_max": 0.13893020398278072,
+            "weight_mean": 0.5833333333333333,
+            "weight_std": 0.25,
+            "weight_cv": 0.4285714285714286
+          }
+        },
+        "inert_rounds_note": "single-update rounds have weight 1.0: sample count, staleness and relevance cannot matter there",
+        "verdict": {
+          "fraction_of_rounds_where_relevance_can_act": 0.5714285714285714,
+          "median_weight_tv_in_multi_rounds": 0.0,
+          "median_relative_update_change": 0.0,
+          "relevance_share_of_weight_log_variance": null,
+          "reading": "relevance moves the weights by <2% (TV) in a typical multi-update round: contribution is NOT expected to be measurable",
+          "thresholds_tv": [
+            0.02,
+            0.1
+          ],
+          "caveat": "descriptive only; says nothing about whether the shift improves performance"
+        }
+      },
+      "retry_counters": {
+        "retry_attempts": 0,
+        "retry_deferred_updates": 0,
+        "retry_deferred_steps": 0,
+        "rejected_bytes": 0.0,
+        "expired_bytes": 0.0,
+        "wasted_uplink_bytes": 0.0,
+        "wasted_uplink_fraction": 0.0,
+        "backoff_s_total": 0.0
+      },
+      "kind": "measurement",
+      "note": "Measurement of cost/behaviour at main-protocol episode length for a handful of episodes; NOT a performance result and NOT a comparison."
+    }
+  },
+  "evidence": {
+    "implementation_checks_passed": true,
+    "full_test_suite_executed": true,
+    "full_test_suite_passed": true,
+    "empirical_performance_evidence": "none: no comparative experiment has been run",
+    "scientific_claims_supported": [],
+    "meaning": "'implementation_check' sections show that code does what the protocol says; they are not evidence that any method performs better. 'measurement' sections are descriptive."
+  },
+  "all_validators_passed": true
+}

@@ -1,0 +1,67 @@
+{
+  "protocol_version": "2.0",
+  "protocol_changelog": [
+    {
+      "version": "1.0",
+      "note": "Initial build. Manifest train_episodes=200 had NO source (no code reads it; no document justifies it); default.yaml used 500 (Paper 2 Table I)."
+    },
+    {
+      "version": "2.0",
+      "note": "train_episodes := 500 (Paper 2 Table I: 'Training episodes / checkpoint interval 500 / 25'; also configs/default.yaml and docs/EXPERIMENT_PROTOCOL.md). Manifest now mirrors eval_every, n_train_seeds, checkpoint_every, episode_steps and pins config_hash. Federated lifecycle, statistics accounting and relevance attribution as repaired on audit/federated-lifecycle-fixes (federated.maturity_eps=0.05, max_buffer_age_s=600). Smoke config is not part of the protocol."
+    }
+  ],
+  "architecture": {
+    "n_usv": 1,
+    "note": "Exactly one USV. Any 2-USV Paper-2 scaling point is adapted to 1 USV."
+  },
+  "seeds": {
+    "layout": 1000,
+    "arrivals": 2000,
+    "fading": 3000,
+    "comm": 4000,
+    "eval_scenario_base": 500000,
+    "train_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "scalability": [
+    {
+      "n_auvs": 1,
+      "n_sensors": 10
+    },
+    {
+      "n_auvs": 3,
+      "n_sensors": 20
+    },
+    {
+      "n_auvs": 10,
+      "n_sensors": 40
+    }
+  ],
+  "methods": [
+    "greedy_matd3",
+    "hungarian_matd3",
+    "centralized_matd3",
+    "independent_td3",
+    "maddpg",
+    "mappo",
+    "fedavg_matd3",
+    "stale_fedmatd3",
+    "semantic_fedmatd3",
+    "service_fedmatd3",
+    "s3a_fedmatd3"
+  ],
+  "eval_scenarios": 20,
+  "eval_every": 50,
+  "n_train_seeds": 5,
+  "checkpoint_every": 25,
+  "episode_steps": 1000,
+  "train_episodes": 500,
+  "reference_manifest": "dt_smarl_step8 frozen Paper 2 manifest (NOT modified; could not be inspected in this build session -- see docs/DEVELOPMENT_STATUS.md)",
+  "project": "fed_matd3_iout",
+  "config_hash": "7f4a0e4f66569528"
+}

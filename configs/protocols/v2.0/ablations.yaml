@@ -1,0 +1,13 @@
+# Mirror of baselines/registry.py::ABLATIONS (the registry is authoritative; tests check they agree).
+ablations:
+  full: {}
+  no_semantic_utility: {semantic.use_in_decisions: false}
+  no_service_arrival_prediction: {allocation.backlog_model: current}
+  no_service_aware_aggregation: {federated.aggregation: semantic}
+  no_semantic_aware_aggregation: {federated.aggregation: service}
+  no_staleness_correction: {federated.kappa: 0.0, federated.max_staleness: 1000000}
+  no_async_communication: {federated.mode: sync}
+  no_update_clipping: {federated.clip_norm: null}
+  no_assignment_continuity: {allocation.weights.switch: 0.0}
+  certainty_equivalent_backlog: {allocation.backlog_model: ce}
+  centralized_actor_training: {federated.enabled: false}

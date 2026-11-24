@@ -1,0 +1,34 @@
+# Very small CPU configuration. Demonstrates plumbing, NOT scientific performance.
+env:
+  n_auvs: 3
+  n_sensors: 10
+  episode_steps: 20
+  region_m: 80.0
+  max_hover_steps: 5
+  offload_hi: 0.04          # explicit hysteresis band for the 5 Mbit smoke buffer: hi > lo (was 0.02 < inherited lo 0.05)
+  offload_lo: 0.01
+  onboard_capacity_mbit: 5.0
+  initial_fill: [0.3, 0.8]
+allocation:
+  contact_time_s: 5.0       # = max_hover_steps * dt_s (same relation as the main config: 60 = 60 * 1.0)
+traffic:
+  scale: 6.0
+acoustic:
+  usv_link: {range_m: 62.0, outage_p_drop: 0.03, outage_p_recover: 0.3, max_rate_mbps: 5.0}
+experiment:
+  train_episodes: 3
+  eval_scenarios: 2
+matd3:
+  hidden: 32
+  batch_size: 16
+  warmup: 20
+  replay_capacity: 2000
+  expl_decay_episodes: 3
+federated:
+  local_steps_per_update: 4
+  min_local_transitions: 20
+  agg_buffer_size: 1
+  agg_timeout_s: 4.0
+  sync_timeout_s: 8.0
+  upload_timeout_s: 40.0
+  model_bytes_per_param: 1
