@@ -46,4 +46,27 @@ python scripts/final_validation.py --run-tests
 Not run (by instruction): `scripts/run_pilot_2seeds.py`, any full-scale or pilot training, `git push`.
 
 ## 9. Executed results and commit identifiers
-(Filled in below after execution.)
+Environment: Python 3.13.18, torch 2.15.0+cu132 (CPU execution), numpy 2.5.3, scipy 1.18.1, pyyaml 6.0.3, gymnasium 1.4.0, pytest 9.1.1; Linux container.
+Commits (local only, **not pushed**), branch `protocol-2.2-candidate`:
+* `6dc6c46` — verbatim import of the delivered Protocol 2.1 tree (recovery point for 2.1).
+* `653d52b9472ecb190b7cfc53e003afded44d430e` — **source commit A**: the Protocol 2.2 candidate (source, configs, tests, docs).
+* `48eb1e5` — report commit B: `docs/final_validation_report.json` generated from the clean tree at A (records `commit = 653d52b…`, `working_tree_clean = true`, `config_hash = e1a9b6e20a25b7be`, protocol 2.2).
+* a later documentation-only commit records this §9.
+
+| Step (in order) | Exit | Result |
+|---|---|---|
+| `python -m compileall -q src scripts tests` | 0 | clean |
+| `python -m pytest -q` (final, on the committed tree, incl. the committed-report test) | 0 | **431 collected, 431 passed, 0 failed, 0 errors, 0 skipped** (110 s) |
+| `python scripts/run_smoke_test.py` | 0 | 13/13 PASS (4 s; plumbing only) |
+| `python scripts/validate_manifest.py` | 0 | MANIFEST OK (2.2, `e1a9b6e20a25b7be`) |
+| `... --protocol 2.1` | 0 | MANIFEST OK (2.1, `c76394bf7eaa9005`) |
+| `... --protocol 2.0` | 0 | MANIFEST OK (2.0, `7f4a0e4f66569528`) |
+| `python scripts/final_validation.py --run-tests` | 0 | all 6 sections true; its own run 430/430 (the self-referential report test is deselected while generating, then passes in the full run above); 136 s |
+| lifecycle + D7–D10 focused tests (9 files) | 0 | all passed |
+
+Order note: the validation commands were run in the prescribed order except that `final_validation.py` (which generates the report that the committed-report test reads) ran before the final full `pytest`, so the report test could pass.
+`test_committed_report_matches_code_configuration_and_commit` passes against the real committed state (report commit `653d52b`, clean tree, matching config hash and source-tree hash). Its checks were not weakened. Git baseline ignores `results/`, caches, checkpoints and credentials-like files (`.env`).
+The report records `empirical_performance_evidence: none`. `scripts/run_pilot_2seeds.py` and all training beyond tests/smoke were NOT run.
+
+## 10. Pilot-readiness verdict
+CONDITIONAL PASS — PILOT READY WITH EXPLICIT LIMITATIONS: all software checks completed; D1–D10 documented but none author-approved; compute energy `not_measured` (no total-energy or energy-efficiency claim allowed); inherited [P] changes lack independent derivation; no 2.1↔2.2 or performance evidence.
