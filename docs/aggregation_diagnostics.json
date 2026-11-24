@@ -2,62 +2,62 @@
   "method": "s3a_fedmatd3",
   "episodes": 6,
   "episode_steps": 1000,
-  "wall_s": 82.44469404220581,
-  "sec_per_episode": 13.740782340367636,
+  "wall_s": 83.96926307678223,
+  "sec_per_episode": 13.994877179463705,
   "gradient_steps_total": 16503,
-  "updates_created": 27,
-  "aggregated": 26,
+  "updates_created": 24,
+  "aggregated": 24,
   "rejected": 0,
   "expired": 0,
-  "unresolved": 1,
+  "unresolved": 0,
   "stats_discarded_episode": 0,
-  "comm_tx_s_per_upload": 24.742400000000004,
-  "tx_energy_j_per_upload_incl_acks": 742.2720000000002,
+  "comm_tx_s_per_upload": 12.371200000000002,
+  "tx_energy_j_per_upload_incl_acks": 371.1360000000001,
   "model_bytes_per_upload": 77320.0,
-  "aggregation_rounds": 16,
-  "single_update_rounds": 7,
-  "single_update_round_fraction": 0.4375,
-  "avg_staleness": 0.2692307692307692,
-  "link_up_fraction": 0.9158888888888889,
-  "bytes_total": 5570432.0,
+  "aggregation_rounds": 13,
+  "single_update_rounds": 5,
+  "single_update_round_fraction": 0.38461538461538464,
+  "avg_staleness": 0.20833333333333334,
+  "link_up_fraction": 0.8692777777777778,
+  "bytes_total": 4874232.0,
   "relevance_min_mean_max": [
     0.0,
-    0.0053434693839531045,
-    0.13893020398278072
+    0.0,
+    0.0
   ],
   "weights_min_mean_max": [
     0.3333333333333333,
-    0.6153846153846154,
+    0.5416666666666666,
     1.0
   ],
   "accounting_balanced": true,
   "all_params_finite": true,
   "return_mean_per_episode": [
-    -412.0494564194232,
-    -469.51405980810523,
-    -363.1643638865401,
-    -426.21552232218284,
-    -481.28374305119115,
-    -430.2551018856466
+    -413.8516896485041,
+    -491.94123937313753,
+    -358.2769705212365,
+    -425.269435863321,
+    -481.07189498965937,
+    -417.8146330465873
   ],
   "aggregation_diagnostics": {
-    "n_rounds": 16,
+    "n_rounds": 13,
     "participants_per_round": {
-      "mean": 1.625,
+      "mean": 1.8461538461538463,
       "histogram": {
-        "1": 7,
-        "2": 8,
-        "3": 1
+        "1": 5,
+        "2": 5,
+        "3": 3
       }
     },
-    "single_update_rounds": 7,
-    "single_update_round_fraction": 0.4375,
-    "multi_update_rounds": 9,
+    "single_update_rounds": 5,
+    "single_update_round_fraction": 0.38461538461538464,
+    "multi_update_rounds": 8,
     "relevance_M": {
       "all_updates_min_mean_max": [
         0.0,
-        0.0053434693839531045,
-        0.13893020398278072
+        0.0,
+        0.0
       ],
       "multi_rounds_quantiles_5_50_95": [
         0.0,
@@ -73,7 +73,7 @@
       ],
       "observed_range": [
         0.1,
-        0.22503718358450267
+        0.1
       ],
       "within_round_spread_max_over_min": {
         "quantiles_5_50_95": [
@@ -120,8 +120,8 @@
       "note": "relevance changes the applied update by this relative L2 amount versus the same round with relevance factor == 1"
     },
     "weight_entropy_per_round": {
-      "mean": 0.4152368271341307,
-      "std": 0.3784694851190652
+      "mean": 0.5201209438309594,
+      "std": 0.4390790983160987
     },
     "per_client": {
       "0": {
@@ -129,32 +129,194 @@
         "relevance_mean": 0.0,
         "relevance_min": 0.0,
         "relevance_max": 0.0,
-        "weight_mean": 0.6666666666666666,
-        "weight_std": 0.26352313834736496,
-        "weight_cv": 0.39528470752104744
+        "weight_mean": 0.5624375624375624,
+        "weight_std": 0.2627132441486644,
+        "weight_cv": 0.4670976152625455
       },
       "1": {
-        "rounds_participated": 9,
+        "rounds_participated": 8,
         "relevance_mean": 0.0,
         "relevance_min": 0.0,
         "relevance_max": 0.0,
-        "weight_mean": 0.48153698153698155,
-        "weight_std": 0.05239813378953591,
-        "weight_cv": 0.1088143502961917
+        "weight_mean": 0.5,
+        "weight_std": 0.2041241452319315,
+        "weight_cv": 0.408248290463863
       },
       "2": {
-        "rounds_participated": 9,
-        "relevance_mean": 0.01543668933142008,
+        "rounds_participated": 8,
+        "relevance_mean": 0.0,
         "relevance_min": 0.0,
-        "relevance_max": 0.13893020398278072,
-        "weight_mean": 0.7036482036482037,
-        "weight_std": 0.2696756713857643,
-        "weight_cv": 0.38325354912806897
+        "relevance_max": 0.0,
+        "weight_mean": 0.5625624375624375,
+        "weight_std": 0.2626835344297514,
+        "weight_cv": 0.4669411195812318
       }
     },
     "inert_rounds_note": "single-update rounds have weight 1.0: sample count, staleness and relevance cannot matter there",
+    "relevance_distributions": {
+      "n_rounds": 13,
+      "n_updates": 24,
+      "components_recorded": true,
+      "rho_sem_distribution": null,
+      "rho_svc_distribution": {
+        "n": 24,
+        "min": 0.0,
+        "mean": 0.0,
+        "max": 0.0,
+        "std": 0.0,
+        "quantiles_5_50_95": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "combined_M_distribution": {
+        "n": 24,
+        "min": 0.0,
+        "mean": 0.0,
+        "max": 0.0,
+        "std": 0.0,
+        "quantiles_5_50_95": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "percent_undefined": {
+        "rho_sem": 100.0,
+        "rho_svc": 0.0,
+        "both_so_M_is_0": 0.0
+      },
+      "between_client_variation_in_multi_rounds": {
+        "n_rounds": 8,
+        "within_round_std_of_M": {
+          "n": 8,
+          "min": 0.0,
+          "mean": 0.0,
+          "max": 0.0,
+          "std": 0.0,
+          "quantiles_5_50_95": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "within_round_range_of_M": {
+          "n": 8,
+          "min": 0.0,
+          "mean": 0.0,
+          "max": 0.0,
+          "std": 0.0,
+          "quantiles_5_50_95": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "weights": {
+        "tv_from_uniform_after_relevance_applied": {
+          "n": 8,
+          "min": 0.0,
+          "mean": 6.243756243756379e-05,
+          "max": 0.0004995004995005103,
+          "std": 0.00016519426267886164,
+          "quantiles_5_50_95": [
+            0.0,
+            0.0,
+            0.00032467532467533145
+          ]
+        },
+        "tv_from_uniform_before_relevance_counterfactual": {
+          "n": 8,
+          "min": 0.0,
+          "mean": 6.243756243756379e-05,
+          "max": 0.0004995004995005103,
+          "std": 0.00016519426267886164,
+          "quantiles_5_50_95": [
+            0.0,
+            0.0,
+            0.00032467532467533145
+          ]
+        },
+        "note": "uniform = equal weight over the round's participants; departure before relevance is due to n_i and staleness only"
+      },
+      "does_relevance_distinguish_clients": "M is ~0 for almost all updates (mean 0.000): the factor sits at the floor eps_M, so relevance is inert; it does not distinguish clients under these conditions"
+    },
+    "heterogeneity_sensitivity_what_if": [
+      {
+        "half_range_of_M": 0.0,
+        "M": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "weights": [
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333
+        ],
+        "tv_from_uniform": 0.0
+      },
+      {
+        "half_range_of_M": 0.05,
+        "M": [
+          0.45,
+          0.5,
+          0.55
+        ],
+        "weights": [
+          0.306060606060606,
+          0.3333333333333333,
+          0.3606060606060606
+        ],
+        "tv_from_uniform": 0.02727272727272731
+      },
+      {
+        "half_range_of_M": 0.1,
+        "M": [
+          0.4,
+          0.5,
+          0.6
+        ],
+        "weights": [
+          0.27878787878787875,
+          0.3333333333333333,
+          0.3878787878787878
+        ],
+        "tv_from_uniform": 0.054545454545454536
+      },
+      {
+        "half_range_of_M": 0.2,
+        "M": [
+          0.3,
+          0.5,
+          0.7
+        ],
+        "weights": [
+          0.22424242424242424,
+          0.33333333333333337,
+          0.44242424242424244
+        ],
+        "tv_from_uniform": 0.10909090909090913
+      },
+      {
+        "half_range_of_M": 0.4,
+        "M": [
+          0.09999999999999998,
+          0.5,
+          0.9
+        ],
+        "weights": [
+          0.11515151515151516,
+          0.33333333333333337,
+          0.5515151515151515
+        ],
+        "tv_from_uniform": 0.2181818181818182
+      }
+    ],
     "verdict": {
-      "fraction_of_rounds_where_relevance_can_act": 0.5625,
+      "fraction_of_rounds_where_relevance_can_act": 0.6153846153846154,
       "median_weight_tv_in_multi_rounds": 0.0,
       "median_relative_update_change": 0.0,
       "relevance_share_of_weight_log_variance": 0.0,
@@ -177,12 +339,12 @@
     "backoff_s_total": 0.0
   },
   "provenance": {
-    "commit": "ab9a3964a23c35095d77617de54b97e685b4064d",
-    "branch": "audit/protocol-2.1-preparation",
+    "commit": "",
+    "branch": "",
     "working_tree_clean": true,
-    "config_hash": "c76394bf7eaa9005",
-    "protocol_version": "2.1",
-    "source_tree_hash": "9fd5cbf3b58d3d7d",
+    "config_hash": "c43cc538bd1733f1",
+    "protocol_version": "2.2",
+    "source_tree_hash": "144c5f8c68495bd1",
     "episodes": 6,
     "seed": 0,
     "method": "s3a_fedmatd3"

@@ -12,13 +12,20 @@ Resolved packets are exposed once through ``drain_resolved`` so the protocol can
 """
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import torch
 
 from .aggregation import aggregate, l2_clip, normalise_with_cap, raw_weights
-from .relevance import relevance
+from .relevance import relevance, rho_sem, rho_svc
 from .staleness import is_acceptable, staleness, staleness_factor
 from .update_packet import ControlMessage, UpdatePacket, UpdateStatus
+
+
+
+def _finite_scalars(d: dict) -> bool:
+    return all(math.isfinite(float(v)) for v in d.values() if isinstance(v, (int, float, np.floating, np.integer)))
 
 
 class USVServer:
@@ -79,6 +86,8 @@ class USVServer:
             ok, reason = False, "stale_at_receipt"
         elif not torch.isfinite(pkt.delta).all():
             ok, reason = False, "non_finite"
+        elif not _finite_scalars(pkt.stats) or not math.isfinite(float(pkt.n_samples)) or pkt.n_samples < 0:
+            ok, reason = False, "non_finite_metadata"        # NaN/inf statistics or sample count would poison Z_i and every weight
         self.events.append({"t": t, "client": pkt.client_id, "update": pkt.update_id, "base": pkt.base_version,
                             "server_version": self.version, "ok": ok, "reason": reason})
         if ok:
@@ -155,7 +164,10 @@ class USVServer:
             self._finish(p, UpdateStatus.AGGREGATED, "commit", t, "aggregated")
         rec = {"round": self.version, "t": t, "kind": kind,
                "clients": [p.client_id for p, _ in accepted], "updates": [p.update_id for p, _ in accepted],
-               "staleness": [d for _, d in accepted], "n": n, "stale_factor": stale, "relevance": rel, "Z": z.tolist(),
+               "staleness": [d for _, d in accepted], "n": n, "stale_factor": stale, "relevance": rel,
+               # DIAGNOSTIC components of M (None = undefined); never used by the update rule
+               "rho_sem": [rho_sem(p.stats, self.use_sem) for p, _ in accepted], "rho_svc": [rho_svc(p.stats) for p, _ in accepted],
+               "Z": z.tolist(),
                "w": w.tolist(), "norms": [p.norm for p, _ in accepted], "clip_scale": scales, **diag,
                "rejected": [(p.client_id, d) for p, d in rejected], "theta_norm": float(self.theta.norm())}
         self.history.append(rec)

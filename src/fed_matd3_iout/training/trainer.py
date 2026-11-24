@@ -16,6 +16,7 @@ from ..agents.exploration import NoiseSchedule
 from ..agents.matd3_agent import MATD3Agent
 from ..agents.replay_buffer import JointStore
 from ..environment.multi_auv_iout_env import MultiAUVIoUTEnv
+from ..utils.compute_energy import ComputeMeter
 from ..utils.logger import RunLogger
 from ..utils.reproducibility import atomic_write_json
 from ..utils.seed import make_rng, seed_everything
@@ -45,6 +46,12 @@ class Trainer:
         self.curve: list[dict] = []
         self.global_time = 0.0
         self.total_steps = 0
+        self.termination: dict | None = None
+        self.meter = ComputeMeter()            # filled by finalize(): cutoff / drain / evaluation-start census
+
+    def compute_report(self) -> dict:
+        """Measured training compute time/energy of the local updates (D9).  Distinct from the MODELLED energy.comp (e_grad_j)."""
+        return self.meter.report()
 
     # ------------------------------------------------------------------ main loop
     def train(self, n_episodes: int | None = None, eval_fn=None, eval_every: int = 0, ckpt_every: int = 0) -> list[dict]:
@@ -71,8 +78,9 @@ class Trainer:
                         c.trans_since += 1
                 self.total_steps += 1
                 if self.total_steps % int(m["update_every"]) == 0:
-                    for c in self.clients:
-                        local_update(c, tgt, self.device, int(m["warmup"]), int(m["batch_size"]), e_grad, env)
+                    with self.meter:
+                        for c in self.clients:
+                            local_update(c, tgt, self.device, int(m["warmup"]), int(m["batch_size"]), e_grad, env)
                 self.global_time += env.dt
                 if self.proto is not None:
                     for rec in self.proto.step(env, self.global_time):
@@ -94,6 +102,61 @@ class Trainer:
             if ckpt_every and self.run_dir and (ep + 1) % ckpt_every == 0:
                 self.save(f"ep{ep + 1}")
         return self.curve
+
+    # ------------------------------------------------------------------ finite-horizon termination (Protocol 2.2)
+    def finalize(self, drain_s: float | None = None) -> dict:
+        """Explicit end-of-training policy.  Records the TRAINING CUTOFF census, optionally runs a bounded COMMUNICATION DRAIN,
+        and records the census at EVALUATION START.
+
+        Drain (only if ``federated.final_drain_s`` > 0): the environment keeps stepping with the current deterministic local
+        actors so link states keep evolving, but NO local update is trained, NO transition is stored, and ``proto.accept_new``
+        is False so no new federated update is created.  Only transfers/aggregations that already exist can resolve.  The drain
+        stops at the first of: nothing left to resolve, or ``drain_s`` seconds.  Nothing is forced: updates still unresolved
+        afterwards stay unresolved (their statistics stay "held": exactly-once settlement is not bypassed) and are reported.
+        The training budget (episodes x steps) is unchanged; drain steps are not training steps.
+        """
+        if self.proto is None:
+            return {"federated": False}
+        budget = float(self.cfg["federated"].get("final_drain_s", 0.0) if drain_s is None else drain_s)
+        cut = self.proto.pending_report()
+        t_cutoff = self.global_time
+        agg_cut = self.proto.n_status["aggregated"]
+        env = self.env
+        steps = 0
+        if budget > 0.0 and self.proto.drain_active():
+            obs = env._obs_all()
+            pols = self.local_policies()
+            self.proto.accept_new = False
+            try:
+                while steps * env.dt < budget and self.proto.drain_active():
+                    act = np.stack([pols[i](obs[i]) for i in range(env.M)])
+                    obs, _, _, _, _ = env.step(act)
+                    self.global_time += env.dt
+                    for rec in self.proto.step(env, self.global_time):
+                        self.log.log("aggregation", rec)
+                    steps += 1
+            finally:
+                self.proto.accept_new = True
+        end = self.proto.pending_report()
+        self.termination = {
+            "federated": True, "drain_budget_s": budget, "drain_steps": steps, "drain_s": steps * env.dt,
+            "t_training_cutoff_s": t_cutoff, "t_evaluation_start_s": self.global_time,
+            "pending_at_cutoff": cut, "pending_at_evaluation_start": end,
+            "aggregated_during_drain": self.proto.n_status["aggregated"] - agg_cut,
+            "global_version_at_cutoff": cut["global_version"], "global_version_at_evaluation_start": end["global_version"],
+            "drain_exhausted_budget": bool(budget > 0.0 and steps * env.dt >= budget and self.proto.drain_active()),
+            # ---- explicit stage record (training cutoff -> census -> drain start -> bounded drain -> drain end -> evaluation start)
+            "stages": {"1_training_cutoff_s": t_cutoff, "2_census_unresolved": cut["unresolved_total"],
+                       "3_drain_start_s": t_cutoff if steps > 0 else None, "4_drain_budget_s": budget,
+                       "5_drain_end_s": self.global_time, "6_evaluation_start_s": self.global_time},
+            "drain_terminated_by": ("drain_not_requested" if budget <= 0.0 else
+                                    "nothing_pending_at_cutoff" if steps == 0 else
+                                    "budget_exhausted" if self.proto.drain_active() else "all_resolved"),
+            "resolved_during_drain": cut["unresolved_total"] - end["unresolved_total"],
+            "unresolved_at_drain_expiry": end["unresolved_total"],
+            "evaluation_started_with_unresolved": bool(end["unresolved_total"] > 0),
+            "statistics_accounting": self.proto.statistics_accounting()}
+        return self.termination
 
     # ------------------------------------------------------------------ policies for evaluation
     def local_policies(self):

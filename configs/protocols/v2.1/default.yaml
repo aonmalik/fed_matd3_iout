@@ -1,0 +1,21 @@
+# Run-level settings. Every value here is overridable from scripts/ via --set key=value.
+run:
+  name: fed_matd3_iout
+  device: auto            # auto | cpu | cuda  (CPU fallback always available)
+  results_root: results
+  checkpoint_root: checkpoints
+seeds:                    # separate seeds per random stream (see utils/seed.py)
+  layout: 1000            # environment generation (sensor layout, rate classes)
+  arrivals: 2000          # Poisson arrivals / packet categories
+  fading: 3000            # Rayleigh fading + link-outage process
+  comm: 4000              # communication scheduling randomness (straggler jitter)
+  training: 0             # torch / numpy / exploration noise
+  eval_scenario_base: 500000   # evaluation scenario k uses base+k for every stream (matched across methods)
+experiment:
+  protocol_version: "2.1"   # must equal configs/experiment_manifest.json; bump on ANY change of a YAML value (see docs/FINAL_SCIENTIFIC_AUDIT.md)
+  method: s3a_fedmatd3    # see baselines/registry.py
+  train_episodes: 500     # Paper 2 Table I (500 episodes). ~10 s/episode on CPU for 3 AUVs
+  eval_scenarios: 20
+  eval_every: 50
+  n_train_seeds: 10
+  checkpoint_every: 25    # Paper 2 Table I checkpoint interval

@@ -8,24 +8,24 @@ from __future__ import annotations
 import numpy as np
 
 from ..environment.multi_auv_iout_env import MultiAUVIoUTEnv
-from .metrics import episode_metrics
+from .metrics import BacklogClearanceTracker, episode_metrics
 
 
 def rollout(cfg, policies, scenario: int, env: MultiAUVIoUTEnv | None = None) -> dict:
     env = env or MultiAUVIoUTEnv(cfg)
     obs, _ = env.reset(int(cfg["seeds"]["eval_scenario_base"]) + int(scenario))
-    G_seen_clear = None
+    clear = BacklogClearanceTracker()
     for t in range(env.T):
         act = np.stack([policies[i](obs[i]) for i in range(env.M)])
         obs, r, term, trunc, info = env.step(act)
         acc = env.accounting()
-        if G_seen_clear is None and acc["G"] > 0 and (acc["residual"] + acc["onboard"]) <= 0.10 * acc["G"]:
-            G_seen_clear = (t + 1) * env.dt
+        clear.update((t + 1) * env.dt, acc["G"], acc["residual"] + acc["onboard"])
         if trunc:
             break
-    env.completion_time_s = G_seen_clear if G_seen_clear is not None else env.T * env.dt
+    env.backlog_clearance_time_s, cens = clear.result(env.T * env.dt)
+    env.backlog_clearance_censored = float(cens)
     m = episode_metrics(env)
-    m["completion_censored"] = float(G_seen_clear is None)
+    m["completion_censored"] = m["backlog_clearance_censored"]                 # DEPRECATED legacy alias
     return m
 
 

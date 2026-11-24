@@ -1,5 +1,7 @@
 # Development Status
 
+**Protocol 2.2 candidate (pilot-stage):** communication airtime arbitration, MAPPO tanh policy, backlog-clearance rename, bounded drain, compute-energy reporting (`not_measured`) and a separate fixed-workload metric are implemented and unit-tested. Decisions D1-D6 are open and D7-D10 are provisional (`docs/PROTOCOL_2.2_DECISION_LOG.md`). No comparative experiment or pilot has been run; this table's "Done" means implemented and tested, not scientifically validated. Open items: `docs/PROTOCOL_2.2_REMAINING_ISSUES.md`.
+
 | Phase | Status |
 |---|---|
 | 1 Repository inspection | **NOT DONE** - `~/dt_smarl_step8/` absent from the build workspace. Models re-implemented from the two papers. |

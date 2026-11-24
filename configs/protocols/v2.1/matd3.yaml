@@ -1,0 +1,29 @@
+matd3:
+  hidden: 128
+  actor_lr: 1.0e-3
+  critic_lr: 1.0e-3
+  gamma: 0.97
+  tau: 0.001              # Paper 2 Table I
+  batch_size: 128
+  replay_capacity: 20000  # Paper 2 Table I
+  warmup: 500
+  policy_delay: 2
+  target_noise: 0.2
+  noise_clip: 0.5
+  expl_noise_start: 0.8
+  expl_noise_end: 0.1
+  expl_decay_episodes: 150
+  update_every: 1          # env steps per gradient update
+  critic_mode: centralized # centralized (CTDE) | independent (Independent TD3)
+  twin: true               # false => single critic (MADDPG-style)
+  critic_other_actors: peers  # peers | own  (actors used for other agents' target actions)
+  grad_clip: 10.0
+  # MAPPO-only
+  ppo:
+    rollout_steps: 500
+    epochs: 4
+    clip: 0.2
+    gae_lambda: 0.95
+    entropy_coef: 0.01
+    lr: 3.0e-4
+    init_log_std: -0.5

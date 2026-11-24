@@ -51,3 +51,22 @@ All options keep critics and critic optimisers local. Impact unmeasured: needs a
 * **Relevance dynamic range (risk R2).** Measured: untrained policies -> M = 0 for ~all updates (factor stuck at the floor eps_M, relevance inert); goal-seeking reference policy -> M ~ 0.54 with between-AUV spread ~0.05, i.e. weight TV ~ 1.5% vs uniform. With symmetric AUVs the formula, as designed, cannot separate clients much. Options (NOT implemented, each is a protocol change): normalise M within a round (e.g. divide by the round mean), raise eta, lower eps_M, or study heterogeneous clients (client_speed < 1, uneven sensor density) where relevance can differ. Do not change before the pilot.
 * **Pilot scope** (episodes, evaluation scenarios, optional longer single-method run for relevance dynamics): `scripts/run_pilot_2seeds.py`.
 * **Seed count 10** was requested and is implemented. It makes a Holm-corrected exact Wilcoxon *attainable* (minimum p = 2^-9 = 0.00195; x10 comparisons = 0.0195 < 0.05); it guarantees nothing about significance or power.
+
+---
+# Added in the Protocol 2.2 candidate (D1-D6 above are untouched and remain OPEN)
+
+**Status vocabulary.** D7-D10 below were given as *provisional* decisions in the Protocol 2.2 finalisation instructions. They are implemented as
+provisional defaults. They are NOT recorded as formally approved by the author; the full records (selected option, rationale, locations, tests)
+are in `docs/PROTOCOL_2.2_DECISION_LOG.md`.
+
+## D7. Channel duplex / airtime model  -- PROVISIONAL: half duplex (`acoustic.usv_link.duplex: half`)
+Scope found in the code: ONE airtime pool PER AUV, covering that AUV's USV-link modem (sensor-data uplink + model upload = TX, control + download = RX). The sensor<->AUV link (25 kHz) is separate and not pooled; the USV side is not modelled as a shared resource (gap). `full` remains selectable. Airtime convention: time division (granted/used airtime) instead of 2.1's "full step at reduced rate" (about 2x energy per byte at share 0.5); this changes federated-method results versus 2.1. Needs approval if the real modem is full duplex.
+
+## D8. Final communication drain  -- PROVISIONAL: bounded drain, `federated.final_drain_s: 600.0`
+A deterministic SERVER-side bound exists (521.1 s: upload timeout 400 + propagation 0.073 + aggregation timeout 120 + 1 step; `federated/drain_bound.py`); the client-notification leg over the downlink has none (contact/outage unbounded), so 600 s (= `max_buffer_age_s`) is an explicit PROVISIONAL pilot value needing sensitivity analysis, not a universal horizon. 2.1 behaviour (0 s) is frozen in `configs/protocols/v2.1/`. No learning, storage or new updates during the drain; unresolved updates are reported, never forced.
+
+## D9. MAPPO / training compute energy  -- PROVISIONAL: joules when measured, otherwise `not_measured`
+No power instrument exists in the build environment (no RAPL powercap, no GPU interface) => compute energy is `not_measured` (None, never 0) for every method; measured compute TIME is reported separately (`training_compute`). The MATD3 family's modelled `e_grad_j` (an assumption) is not a measurement. Cross-method training total-energy comparisons are INCOMPLETE; no energy-efficiency claim is permitted from them.
+
+## D10. Fixed-workload completion metric  -- PROVISIONAL: added as a separate metric
+`fixed_workload_completion_time_s` (+ censored flag, delivered fraction) with arrivals disabled and the scenario's initial buffers as the identical workload; completion = delivery to the USV. `backlog_clearance_time_s` is unchanged. Details: `evaluation/fixed_workload.py`.

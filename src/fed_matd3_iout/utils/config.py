@@ -114,6 +114,8 @@ def validate_config(cfg) -> None:
             need = max(float(f.get("agg_timeout_s", 0.0)), float(f.get("sync_timeout_s", 0.0)))
             if float(f["max_buffer_age_s"]) <= need:
                 bad.append(f"federated.max_buffer_age_s={f['max_buffer_age_s']} must exceed agg/sync timeouts ({need})")
+        if "final_drain_s" in f and float(f["final_drain_s"]) < 0.0:
+            bad.append("federated.final_drain_s must be >= 0")
         r = f.get("retry")
         if r is not None and bool(r.get("enabled", True)):
             b, k, m = float(r.get("base_s", 0.0)), float(r.get("factor", 0.0)), float(r.get("max_s", 0.0))

@@ -77,8 +77,17 @@ def test_protocol_20_is_preserved_and_still_reproducible():
     c20 = load_config(cfg_dir=frozen)
     assert m20["protocol_version"] == "2.0" and m20["n_train_seeds"] == 5 and m20["config_hash"] == config_hash(c20) == "7f4a0e4f66569528"
     assert validate_manifest(m20, c20, METHODS, ABLATIONS, yaml.safe_load(open(frozen / "ablations.yaml"))["ablations"]) == []
-    assert M["protocol_version"] == "2.1" and M["n_train_seeds"] == 10 and M["seeds"]["train_seeds"] == list(range(10))
-    assert [e["version"] for e in M["protocol_changelog"]][-3:] == ["1.0", "2.0", "2.1"]
+    assert M["protocol_version"] == "2.2" and M["n_train_seeds"] == 10 and M["seeds"]["train_seeds"] == list(range(10))
+    assert [e["version"] for e in M["protocol_changelog"]][-4:] == ["1.0", "2.0", "2.1", "2.2"]
+    # Protocol 2.1 manifest + YAML preserved verbatim as the historical record (hash recorded BEFORE 2.2 existed)
+    f21 = ROOT / "configs" / "protocols" / "v2.1"
+    m21 = json.load(open(f21 / "experiment_manifest.json"))
+    c21 = load_config(cfg_dir=f21)
+    assert m21["protocol_version"] == "2.1" and m21["config_hash"] == config_hash(c21) == "c76394bf7eaa9005"
+    assert validate_manifest(m21, c21, METHODS, ABLATIONS, yaml.safe_load(open(f21 / "ablations.yaml"))["ablations"]) == []
+    assert m21["config_hash"] != M["config_hash"]
+    r21 = subprocess.run([sys.executable, str(ROOT / "scripts" / "validate_manifest.py"), "--protocol", "2.1"], capture_output=True, text=True)
+    assert r21.returncode == 0 and "protocol 2.1" in r21.stdout
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / "validate_manifest.py"), "--protocol", "2.0"], capture_output=True, text=True)
     assert r.returncode == 0 and "protocol 2.0" in r.stdout
     assert c20.federated.get("retry") is None and load_config().federated.retry.enabled      # 2.0 behaviour == retry absent

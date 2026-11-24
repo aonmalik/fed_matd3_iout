@@ -33,6 +33,8 @@ class FakeEnv:
         self.episode_id = 1
         self.win = {k: np.zeros(n) for k in KEYS}
         self.model_traffic_active = [False] * n
+        self.model_uplink_active = [False] * n
+        self.sensor_uplink_airtime_s = [0.0] * n
         self.stats_refused_episode = 0
         self.stats_returned = 0
         self.injected = {k: 0.0 for k in KEYS}

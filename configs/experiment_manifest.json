@@ -1,5 +1,5 @@
 {
-  "protocol_version": "2.1",
+  "protocol_version": "2.2",
   "protocol_changelog": [
     {
       "version": "1.0",
@@ -12,6 +12,10 @@
     {
       "version": "2.1",
       "note": "PREPARATION release (nothing has been run at publication scale). (1) n_train_seeds 5 -> 10 (training seeds 0..9): with 5 seeds the exact Wilcoxon test cannot reach p<0.05 and Holm over 10 comparisons needs >=9 seeds; 10 seeds make a Holm-corrected Wilcoxon *attainable* (min p = 2^-9 = 0.00195 < 0.05/10) but guarantee nothing about significance, power or effect size. (2) federated.retry: bounded deterministic exponential back-off after REJECTED/EXPIRED updates (base 120 s = agg_timeout_s, factor 2, cap 480 s), counters retries / deferred / rejected+expired bytes; reset by commit or by a newer global install. (3) FederatedClient.install_global: blend==1 is now an exact replacement (1*theta+0*cur turned a non-finite local actor into NaN). Methodology of the semantic aggregation, the relevance definition, maturity_eps (0.05), the statistics settlement rule and all learners are UNCHANGED; open author decisions are listed in docs/AUTHOR_DECISIONS.md and none was silently resolved. Protocol 2.0 is preserved verbatim in configs/protocols/v2.0/ (config_hash 7f4a0e4f66569528) and git tag protocol-2.0."
+    },
+    {
+      "version": "2.2",
+      "note": "CANDIDATE (nothing has been run at publication scale; NOT a reproduction of the Paper 2 setup: this project uses ONE USV). Protocol 2.1 is preserved verbatim in configs/protocols/v2.1/ (config_hash c76394bf7eaa9005, `python scripts/validate_manifest.py --protocol 2.1`); the 2.1 SOURCE CODE is preserved only as the backup archive recorded in docs/PROTOCOL_2.2_CORRECTION_REPORT.md (this working tree has no Git history). IMPLEMENTATION CORRECTIONS (invalidate 2.1 results of the affected methods): (C1) per-AUV airtime arbitration: upload, control and download share ONE model_share pool (2.1 gave each the full share); (C2) airtime/energy are time-division quantities = granted/used airtime (2.1 charged a full step at reduced rate); sensor-data reservation is direction-aware; (C3) MAPPO uses a tanh-squashed policy with Jacobian-corrected log-probability (2.1 stored the likelihood of an unclipped sample but executed the clipped action); (C4) updates with non-finite statistics/sample count are rejected at receipt (non_finite_metadata) and non-finite statistics are never merged into the window; (C5) a transfer whose remaining bytes vanish by rounding completes. METRIC/REPORTING: completion_time_s renamed backlog_clearance_time_s (definition unchanged, censoring flag added, legacy alias kept); explicit finite-horizon termination census (cutoff / drain / evaluation start); n_samples semantics documented (formula unchanged); relevance distribution diagnostics; non-equivalence N11 (MAPPO compute energy). CONFIG ADDITIONS: acoustic.usv_link.duplex=half (D7, provisional: half-duplex per-AUV USV-link modem, one airtime pool; the model grant is also capped by the airtime the sensor-data uplink already used in the step); federated.final_drain_s=600.0 (D8, PROVISIONAL pilot setting = max_buffer_age_s >= derived server-side resolution bound 521.1 s; the client-notification leg has no deterministic bound; needs sensitivity analysis; 2.1 behaviour = 0 is frozen in configs/protocols/v2.1); experiment.fixed_workload_eval=true (D10: separate fixed_workload_completion_time_s measurement with arrivals disabled; backlog_clearance_time_s untouched). D9: compute energy is reported in joules only from a real measurement, otherwise `not_measured` (no instrument in the build environment); no config field. UNCHANGED: aggregation formula, relevance definition, maturity_eps, statistics settlement rule, retry parameters, all learners except MAPPO's policy parameterisation, environment physics. OPEN author decisions D1-D6 untouched; new open decisions D7-D10 are PROVISIONAL decisions (proposals, not approved by the author) recorded in docs/PROTOCOL_2.2_DECISION_LOG.md and docs/AUTHOR_DECISIONS.md."
     }
   ],
   "architecture": {
@@ -72,5 +76,5 @@
   "train_episodes": 500,
   "reference_manifest": "dt_smarl_step8 frozen Paper 2 manifest (NOT modified; could not be inspected in this build session -- see docs/DEVELOPMENT_STATUS.md)",
   "project": "fed_matd3_iout",
-  "config_hash": "c76394bf7eaa9005"
+  "config_hash": "e1a9b6e20a25b7be"
 }

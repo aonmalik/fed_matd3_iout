@@ -22,7 +22,7 @@ NON_EQUIVALENT = [
      "detail": "Same environment-step budget, but MAPPO does epochs x 4 minibatch steps per 500-step rollout (~16 minibatch updates per 1000 env steps) versus one gradient step per env step per agent for the MATD3 family. On-policy data cannot be replayed, so the update budgets cannot be equalised without changing the algorithm.",
      "can_equalise": False},
     {"id": "N3", "methods": ["mappo"], "aspect": "policy class / exploration",
-     "detail": "Shared Gaussian actor with learned log-std and entropy bonus; MATD3 family uses per-AUV deterministic actors with additive Gaussian noise on a decay schedule. Evaluation is deterministic (mean action) for all.",
+     "detail": "Shared tanh-squashed Gaussian actor (Protocol 2.2: latent Gaussian, executed action tanh(u), Jacobian-corrected PPO likelihood) with learned log-std and a latent-entropy bonus; MATD3 family uses per-AUV deterministic actors with additive Gaussian noise on a decay schedule. Evaluation is deterministic (mean action) for all.",
      "can_equalise": False},
     {"id": "N4", "methods": ["mappo"], "aspect": "parameter sharing",
      "detail": "MAPPO shares ONE actor across AUVs for training and evaluation (value input adds an AUV one-hot).",
@@ -46,6 +46,9 @@ NON_EQUIVALENT = [
      "detail": "Independent TD3 critic sees only (o_i, a_i): intentionally less information (baseline definition).", "can_equalise": False},
     {"id": "N10", "methods": ["maddpg"], "aspect": "TD3 stabilisers",
      "detail": "MADDPG disables twin critics, delayed actor updates and target smoothing by definition.", "can_equalise": False},
+    {"id": "N11", "methods": ["mappo"], "aspect": "training computation-energy accounting",
+     "detail": "MODELLED vs MEASURED: the MATD3 family charges the ASSUMED constant e_grad_j per local gradient step (training E_comp_j, a model parameter, not a measurement); MAPPO charges nothing, so its training E_comp_j is NOT 0 'energy' but UNACCOUNTED. D9 (provisional): compute energy is reported in joules only from a real measurement (utils/compute_energy.py); no instrument exists in the build environment, so every method reports compute energy as `not_measured` next to its measured compute TIME (training_compute in evaluation.json). Cross-method TRAINING total-energy comparisons are therefore INCOMPLETE and no energy-efficiency claim may rest on them. Mission energy (propulsion + communication) and EVALUATION energy (no learning in any method) are separate and unaffected.",
+     "can_equalise": False},
 ]
 
 

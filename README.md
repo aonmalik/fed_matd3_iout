@@ -5,6 +5,11 @@ Semantic- and Service-Aware **Federated MATD3** for cooperative multi-AUV data c
 > **Status: research code, no validated results yet.** Tests and a smoke test pass; publication-scale experiments have **not** been run, and a short pilot did not yet show learning
 > (see `docs/ASSUMPTIONS_AND_LIMITATIONS.md`). Do not cite any performance claim from this repository until you have run the full protocol.
 
+> **Protocol 2.2 (CANDIDATE, pilot-stage).** Protocol 2.1 is frozen in `configs/protocols/v2.1/` and 2.2 results are NOT comparable with 2.1 results. This is a single-USV
+> project, not a reproduction of the Paper 2 two-USV setup. Decisions D1-D6 are open; D7-D10 are provisional proposals, not approved
+> (`docs/PROTOCOL_2.2_DECISION_LOG.md`). Software checks (tests, smoke test, validators) are verification of the implementation, not scientific evidence; compute energy is
+> `not_measured`, so no total-energy or energy-efficiency claim is supported. See `docs/PROTOCOL_2.2_CORRECTION_REPORT.md` and `docs/PROTOCOL_2.2_REMAINING_ISSUES.md`.
+
 ## Research objective
 Can semantic- and service-aware asynchronous federated MATD3 improve delivered semantic utility, collection efficiency and robustness of multi-AUV IoUT data collection under
 intermittent links, compared with conventional MATD3 and conventional federated learning? (Hypothesis under test, not a finding.)

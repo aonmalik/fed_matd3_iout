@@ -12,7 +12,8 @@ seeds:                    # separate seeds per random stream (see utils/seed.py)
   training: 0             # torch / numpy / exploration noise
   eval_scenario_base: 500000   # evaluation scenario k uses base+k for every stream (matched across methods)
 experiment:
-  protocol_version: "2.1"   # must equal configs/experiment_manifest.json; bump on ANY change of a YAML value (see docs/FINAL_SCIENTIFIC_AUDIT.md)
+  protocol_version: "2.2"   # must equal configs/experiment_manifest.json; bump on ANY change of a YAML value (see docs/FINAL_SCIENTIFIC_AUDIT.md)
+  fixed_workload_eval: true   # D10 (2.2): also run the separate fixed-workload completion measurement (arrivals off) on the matched scenarios
   method: s3a_fedmatd3    # see baselines/registry.py
   train_episodes: 500     # Paper 2 Table I (500 episodes). ~10 s/episode on CPU for 3 AUVs
   eval_scenarios: 20

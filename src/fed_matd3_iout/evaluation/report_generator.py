@@ -11,7 +11,10 @@ from .comparability import ATTR, comparability, deployment
 from .statistical_tests import holm_bonferroni, mean_sd_ci, paired_test
 
 KEY_METRICS = ["U_total", "U_norm", "delivered_mbit", "overflow_mbit", "collection_ratio", "delivery_ratio",
-               "critical_pdr", "E_total_j", "U_per_E", "mean_age_s", "unsafe_events", "workload_imbalance"]
+               "critical_pdr", "E_total_j", "U_per_E", "mean_age_s", "unsafe_events", "workload_imbalance",
+               "backlog_clearance_time_s", "backlog_clearance_censored"]
+# D10: separate fixed-workload measurement (only present in results produced with experiment.fixed_workload_eval=true)
+FIXED_WORKLOAD_METRICS = ["fixed_workload_completion_time_s", "fixed_workload_censored", "fixed_workload_delivered_fraction"]
 
 
 def load_results(path: str | Path) -> dict:
@@ -29,6 +32,9 @@ def seed_scores(per_seed: dict, metric: str) -> np.ndarray:
 
 def table(results: dict, metrics=KEY_METRICS) -> list[dict]:
     rows = []
+    has_fw = all(FIXED_WORKLOAD_METRICS[0] in next(iter(ps.values()))[0] for ps in results.values() if ps and next(iter(ps.values())))
+    if metrics is KEY_METRICS and has_fw:
+        metrics = KEY_METRICS + FIXED_WORKLOAD_METRICS
     for method, per_seed in results.items():
         row = {"method": method, "deployment": deployment(method) if method in ATTR else "n/a"}
         for m in metrics:

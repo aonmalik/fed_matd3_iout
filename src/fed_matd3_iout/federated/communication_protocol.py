@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..communication.capacity_arbiter import arbitrate
 from ..communication.contact_scheduler import ContactScheduler
 from ..communication.model_transfer import ModelTransfer
 from .federated_client import FederatedClient
@@ -35,7 +36,14 @@ _ACC_KEYS = ("coll_mbit", "owned_loss_mbit", "V_mature", "U_mature")
 class FederatedProtocol:
     def __init__(self, clients: list[FederatedClient], server: USVServer, fcfg, usv_cfg, dt: float):
         self.clients, self.server, self.f = clients, server, fcfg
-        self.share = float(usv_cfg["model_share"])
+        self.share = float(usv_cfg["model_share"])                 # POOL of airtime for ALL model traffic of one AUV (2.2)
+        self.duplex = str(usv_cfg.get("duplex", "half"))           # 'half': one shared pool; 'full': per-direction pools
+        if self.duplex not in ("half", "full"):
+            raise ValueError(f"acoustic.usv_link.duplex must be 'half' or 'full', got {self.duplex!r}")
+        self.last_alloc: dict[int, dict[str, float]] = {}          # per-AUV grants of the latest step (tests / diagnostics)
+        self.alloc_violations = 0                                  # steps where a pool was exceeded (must stay 0)
+        self.alloc_steps = 0
+        self.accept_new = True                                     # False during the final drain: no NEW update is created
         self.frag = bool(fcfg["allow_fragmentation"])
         self.sched = ContactScheduler(len(clients), dt, self.frag)
         self.dt = dt
@@ -82,6 +90,37 @@ class FederatedProtocol:
                                 "base_version": pkt.base_version})
 
     # ------------------------------------------------------------------------------------------
+    def _demand(self, tr: ModelTransfer | None, link) -> float:
+        """Airtime (fraction of one step at the full link rate) the transfer still needs; 0 if it cannot send now."""
+        if tr is None or tr.done_tx or not link.up or not link.success:
+            return 0.0
+        rate = link.rate_mbps * 1e6 / 8.0
+        return float("inf") if rate <= 0 else (tr.total_bytes - tr.progress_bytes) / (rate * self.dt)
+
+    def _grants(self, c: FederatedClient, link, env=None) -> dict[str, float]:
+        """Per-transfer airtime grants for this step (sum <= pool; half duplex: one pool, full duplex: per direction)."""
+        d = {"upload": self._demand(c.upload, link), "ctrl": self._demand(c.ctrl, link),
+             "download": self._demand(c.download, link)}
+        # Half duplex: airtime already used by the sensor-data uplink in THIS step's time slot (the environment steps first) is
+        # not available to model traffic, so sensor data + model traffic never exceed one step of airtime on the AUV's USV-link
+        # modem.  In steady state the sensor uplink is held to 1 - pool by the reservation, so the full pool remains.
+        arr = getattr(env, "sensor_uplink_airtime_s", None)
+        used = float(arr[c.id]) / self.dt if arr is not None else 0.0
+        free = max(0.0, 1.0 - used)
+        if self.duplex == "half":
+            pool = min(self.share, free)
+            g = arbitrate({k: min(v, 1.0) for k, v in d.items()}, pool)
+            pools = [(g, pool)]
+        else:                                                      # full duplex: only the uplink direction competes with sensor data
+            up_pool, dn_pool = min(self.share, free), self.share
+            g = arbitrate({"upload": min(d["upload"], 1.0)}, up_pool)
+            g.update(arbitrate({k: min(d[k], 1.0) for k in ("ctrl", "download")}, dn_pool))
+            pools = [({"upload": g["upload"]}, up_pool), ({k: g[k] for k in ("ctrl", "download")}, dn_pool)]
+        self.alloc_steps += 1
+        if any(sum(x.values()) > pool + 1e-9 for x, pool in pools):
+            self.alloc_violations += 1
+        return g
+
     def step(self, env, t: float) -> list[dict]:
         """Advance all transfers by one step of global time ``t`` (seconds). Returns aggregation records."""
         links = env.links
@@ -95,7 +134,7 @@ class FederatedProtocol:
             l = links[i]
             tx_s = rx_s = 0.0
             # ---- start a new upload: only when NO update of this client is unresolved
-            ready = c.outstanding is None and c.upload is None and c.update_ready() and not (sync and c.awaiting_global)
+            ready = self.accept_new and c.outstanding is None and c.upload is None and c.update_ready() and not (sync and c.awaiting_global)
             if ready and not c.retry_allows(t):                    # bounded back-off after failed updates: defer, never drop
                 c.stats["retry_deferred_steps"] += 1
                 if not c._defer_open:
@@ -115,9 +154,20 @@ class FederatedProtocol:
                     c.awaiting_global = True
                 elif l.up:
                     c.stats["deferred"] += 1
+            # ---- open the downlink transfers that will compete for airtime this step
+            if c.ctrl is None:
+                msgs = self.server.pop_outbox(i)
+                if msgs:
+                    c.ctrl = ModelTransfer("ack", self.ack_bytes * len(msgs), msgs, t_start=t)
+            if c.download is None and c.base_version < self.server.version and l.up:
+                v = self.server.version
+                c.download = ModelTransfer("download", self.model_bytes, (v, self.server.theta.clone()), t_start=t)
+            # ---- per-AUV airtime arbitration (communication/capacity_arbiter.py): grants never exceed the pool
+            grants = self._grants(c, l, env)
+            self.last_alloc[i] = grants
             # ---- advance upload
             if c.upload is not None:
-                tx_s += c.upload.step(t, self.dt, l, self.share, self.frag)
+                tx_s += c.upload.step(t, self.dt, l, grants.get("upload", 0.0), self.frag)
                 if c.upload.done_tx:
                     pkt = c.upload.payload
                     pkt.bytes_sent = float(c.upload.total_bytes)
@@ -136,23 +186,16 @@ class FederatedProtocol:
                     c.awaiting_global = False
                     self._settle(env, pkt, t)
             # ---- downlink control messages (receipt / commit / reject / expire): one transfer at a time, list payload
-            if c.ctrl is None:
-                msgs = self.server.pop_outbox(i)
-                if msgs:
-                    c.ctrl = ModelTransfer("ack", self.ack_bytes * len(msgs), msgs, t_start=t)
             if c.ctrl is not None:
-                rx_s += c.ctrl.step(t, self.dt, l, self.share, self.frag)
+                rx_s += c.ctrl.step(t, self.dt, l, grants.get("ctrl", 0.0), self.frag)
                 if c.ctrl.done_tx and t >= c.ctrl.t_arrival:
                     c.stats["bytes_down"] += c.ctrl.total_bytes
                     for m in c.ctrl.payload:                        # in send order
                         c.handle_control(m, t)
                     c.ctrl = None
             # ---- advance download of a new global model
-            if c.download is None and c.base_version < self.server.version and l.up:
-                v = self.server.version
-                c.download = ModelTransfer("download", self.model_bytes, (v, self.server.theta.clone()), t_start=t)
             if c.download is not None:
-                rx_s += c.download.step(t, self.dt, l, self.share, self.frag)
+                rx_s += c.download.step(t, self.dt, l, grants.get("download", 0.0), self.frag)
                 if c.download.done_tx and t >= c.download.t_arrival:
                     v, theta = c.download.payload
                     c.install_global(theta, v, float(self.f["download_blend"]))
@@ -161,6 +204,7 @@ class FederatedProtocol:
                     c.download = None
                     c.awaiting_global = False
             env.model_traffic_active[i] = (c.upload is not None) or (c.download is not None) or (c.ctrl is not None)
+            env.model_uplink_active[i] = c.upload is not None       # direction-aware reservation of the sensor-data uplink
             if tx_s or rx_s:
                 env.add_comm_energy(i, tx_s, rx_s)
                 c.stats["tx_s"] += tx_s
@@ -181,6 +225,33 @@ class FederatedProtocol:
         for pkt in self.server.drain_resolved():                    # terminal outcomes decided by the server this step
             self._settle(env, pkt, t)
         return recs
+
+    # ------------------------------------------------------------------------------------------
+    def pending_report(self) -> dict:
+        """Census of unresolved updates by lifecycle state (read-only; used at the training cutoff and after the drain)."""
+        by = {"uploading": 0, "in_flight": 0, "buffered": 0, "awaiting_terminal_outcome_at_client": 0}
+        for c in self.clients:
+            p = c.outstanding
+            if p is None:
+                continue
+            if p.status is UpdateStatus.UPLOADING:
+                by["uploading"] += 1
+            elif p.status is UpdateStatus.IN_FLIGHT:
+                by["in_flight"] += 1
+            elif p.status is UpdateStatus.BUFFERED:
+                by["buffered"] += 1
+            else:                                               # server already decided (aggregated/rejected/expired); client not yet told
+                by["awaiting_terminal_outcome_at_client"] += 1
+        return {**by, "unresolved_total": sum(by.values()),
+                "control_transfers_active": sum(1 for c in self.clients if c.ctrl is not None),
+                "control_messages_queued": sum(len(v) for v in self.server.outbox.values()),
+                "downloads_active": sum(1 for c in self.clients if c.download is not None),
+                "global_version": self.server.version}
+
+    def drain_active(self) -> bool:
+        """True while something already created can still resolve (an unresolved update or a transfer in progress)."""
+        r = self.pending_report()
+        return bool(r["unresolved_total"] or r["control_transfers_active"] or r["control_messages_queued"] or r["downloads_active"])
 
     # ------------------------------------------------------------------------------------------
     def statistics_accounting(self) -> dict:

@@ -72,6 +72,8 @@ class MultiAUVIoUTEnv:
         self.action_space = spaces.Box(-1.0, 1.0, (self.M, 2), np.float32)
         self.act_dim = 2
         self.model_traffic_active = np.zeros(self.M, dtype=bool)
+        self.model_uplink_active = np.zeros(self.M, dtype=bool)     # an upload is in progress (direction-aware reservation)
+        self.sensor_uplink_airtime_s = np.zeros(self.M)             # airtime the sensor-data uplink used in the LATEST env step
         self.episode_offset = 0
         self.step_idx = 0
         # Unique id of the current episode: increments on EVERY reset (episode_offset can repeat, e.g. in evaluation).
@@ -144,6 +146,8 @@ class MultiAUVIoUTEnv:
         self.comm_tx_s = np.zeros(self.M)
         self.comm_rx_s = np.zeros(self.M)
         self.model_traffic_active[:] = False
+        self.model_uplink_active[:] = False
+        self.sensor_uplink_airtime_s[:] = 0.0
         self.last_realloc = 0
         self.ep_comp = np.zeros(self.M)
         self.rew_comp_sum = {k: 0.0 for k in ("utility", "overflow", "energy", "collision", "boundary", "shape")}
@@ -296,6 +300,7 @@ class MultiAUVIoUTEnv:
         self.links = self.link_proc.step(self._slant())
         dU_total = 0.0
         dU_auv = np.zeros(self.M)
+        self.sensor_uplink_airtime_s[:] = 0.0
         for a in self.auvs:
             i = a.aid
             l = self.links[i]
@@ -306,12 +311,13 @@ class MultiAUVIoUTEnv:
             else:
                 a.belief_age += dt
             if l.up and l.success and a.onboard:
-                share = 1.0 - float(cfg["acoustic"]["usv_link"]["model_share"]) if self.model_traffic_active[i] else 1.0
+                share = self._sensor_uplink_share(i)
                 cap_mbit = l.rate_mbps * dt * share
                 sent_mbit, du = self._uplink(a, cap_mbit, t, l)
                 dU_total += du
                 dU_auv[i] = du
-                airtime = sent_mbit / max(l.rate_mbps * share, 1e-12)
+                airtime = sent_mbit / max(l.rate_mbps, 1e-12)             # time on air at the full rate (<= share * dt)
+                self.sensor_uplink_airtime_s[i] = airtime                 # the protocol may only grant model traffic the rest
                 self.energy.tx[i] += float(en["p_tx_elec_w"]) * airtime
         # propulsion energy ledger (Eq. E1/E2); hover => v = 0 => only baseline power P0
         for a in self.auvs:
@@ -361,6 +367,17 @@ class MultiAUVIoUTEnv:
         obs = self._obs_all()
         info["obs_all"] = obs
         return obs, r.astype(np.float32), False, truncated, info
+
+    def _sensor_uplink_share(self, i: int) -> float:
+        """Fraction of one step's airtime the sensor-data uplink of AUV ``i`` may use.
+
+        Sensor data and model traffic share the AUV's USV-link modem.  Half duplex: any model transfer (either direction) reserves
+        ``model_share``; full duplex: only an upload does (the downlink is a separate budget).  Reflects the transfers that were
+        active after the previous protocol step; the protocol additionally caps the model grant by the airtime already used here.
+        """
+        ul = self.cfg["acoustic"]["usv_link"]
+        reserved = self.model_traffic_active[i] if str(ul.get("duplex", "half")) == "half" else self.model_uplink_active[i]
+        return 1.0 - float(ul["model_share"]) if reserved else 1.0
 
     def _owned_loss_step(self, i: int) -> float:
         return float(self._loss_owned_step[i])
@@ -527,6 +544,9 @@ class MultiAUVIoUTEnv:
         """
         if int(episode_id) != self.episode_id:
             self.stats_refused_episode += 1
+            return False
+        if any(k in stats and not math.isfinite(float(stats[k])) for k in self.WINDOW_KEYS):
+            self.stats_refused_nonfinite = getattr(self, "stats_refused_nonfinite", 0) + 1     # never poison the running window
             return False
         for k in self.WINDOW_KEYS:
             if k in stats:

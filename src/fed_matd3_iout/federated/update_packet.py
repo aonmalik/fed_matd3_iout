@@ -53,7 +53,8 @@ class UpdatePacket:
     base_version: int                 # global version the client was last synchronised to
     delta: torch.Tensor               # flat parameter difference
     snapshot: torch.Tensor            # local parameters at creation (becomes the new reference ONLY after aggregation commit)
-    n_samples: float                  # n_i = gradient steps * batch size since the reference
+    n_samples: float                  # n_i = (gradient steps since the reference) * batch size = REPLAY-SAMPLE PRESENTATIONS behind this delta;
+                                      # NOT unique transitions (n_transitions) and NOT replay size.  Common batch size => n_i ~ local gradient steps.
     local_steps: int
     n_transitions: int
     norm: float

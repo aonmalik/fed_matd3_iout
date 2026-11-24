@@ -1,4 +1,4 @@
-"""Which method pairs are like-for-like, and which differences (declared non-equivalences N1-N10) a comparison inherits.
+"""Which method pairs are like-for-like, and which differences (declared non-equivalences N1-N11) a comparison inherits.
 
 A paired test on matched training seeds says nothing about WHY two methods differ.  Every row written by
 ``report_generator.comparisons`` therefore carries the declared non-equivalences that separate the two methods, so that a
@@ -34,7 +34,7 @@ def differences(a: str, b: str) -> list[str]:
     if da != db and "global_federated_actor" in (da, db):
         out.append("N5 deployment: global federated actor vs non-federated actors (and N7 model-traffic cost, N6 initialisation)")
     if (ta == "mappo") != (tb == "mappo"):
-        out.append("N2/N3/N4 MAPPO: different update budget, policy class and parameter sharing")
+        out.append("N2/N3/N4/N11 MAPPO: different update budget, policy class, parameter sharing and training compute-energy accounting")
     if la != lb:
         out.append("N1 task allocator differs")
     if ca != cb:
