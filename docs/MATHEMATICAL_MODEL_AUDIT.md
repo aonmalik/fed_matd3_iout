@@ -22,7 +22,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 
 ## Equation registry
 
-### Q0 - Poisson arrivals  
+### Q0 - Poisson arrivals
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `A_j(t) ~ Poisson(lambda_j(t) dt)`
@@ -35,7 +35,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** traffic.base_rates, traffic.scale, traffic.rate_change_*
 - **Known limitations:** Rate change is piecewise-constant; no burstiness/correlation.
 
-### Q1 - Pre-service occupancy  
+### Q1 - Pre-service occupancy
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `B_pre = B + A`
@@ -48,7 +48,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** env.buffer_units
 - **Known limitations:** Event order is never changed.
 
-### Q2 - Overflow  
+### Q2 - Overflow
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `L = max(0, B_pre - B_max)`
@@ -61,7 +61,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** env.buffer_units
 - **Known limitations:** Drop policy (tail of new arrivals) is a modelling choice; value of lost packets tracked for diagnostics.
 
-### Q3 - Available backlog  
+### Q3 - Available backlog
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `B_avail = min(B_max, B_pre)`
@@ -74,7 +74,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** env.buffer_units
 - **Known limitations:** -
 
-### Q4 - Collected amount  
+### Q4 - Collected amount
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `D = min{B_avail, R_ij dt / q, free_onboard/q}`
@@ -87,7 +87,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** env.onboard_capacity_mbit, acoustic.sensor_link.max_rate_mbps
 - **Known limitations:** Single sensor-link rate at hover (worst case r_dc); no per-step rate variation.
 
-### Q5 - Buffer update  
+### Q5 - Buffer update
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `B(t+1) = B_avail - D`
@@ -100,7 +100,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** -
 
-### Q6 - Unit conversion  
+### Q6 - Unit conversion
 **Class:** A  established
 
 - **Expression:** `q = Q / B_max  [Mbit per unit]`
@@ -113,7 +113,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** env.buffer_mbit, env.buffer_units
 - **Known limitations:** -
 
-### Q7 - Sensor mass balance  
+### Q7 - Sensor mass balance
 **Class:** A  established
 
 - **Expression:** `G = D + L + B_res`
@@ -126,7 +126,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** -
 
-### Q8 - End-to-end mass balance  
+### Q8 - End-to-end mass balance
 **Class:** A  established
 
 - **Expression:** `G = Delivered + Onboard + L + B_res`
@@ -139,7 +139,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** Verified to <1e-9 Mbit; dropped data after delivery not modelled.
 
-### Q9 - Hover duration  
+### Q9 - Hover duration
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `h = max(1, ceil(Q b / (B R dt)))  [steps]`
@@ -152,7 +152,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** env.max_hover_steps
 - **Known limitations:** max_hover_steps cap is an ADDITION (default 60).
 
-### P0 - Travel time  
+### P0 - Travel time
 **Class:** D  approximation (needs validation)
 
 - **Expression:** `T_ij = d_ij / (v_nom + eps)`
@@ -165,7 +165,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** allocation.v_nom
 - **Known limitations:** Ignores heading changes, boundary rejections, drift and tracking error.
 
-### P1 - Exact expected backlog at arrival  
+### P1 - Exact expected backlog at arrival
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `E[B_arr] = sum_n min(B_max, b+n) Pois(n; lambda T)`
@@ -178,7 +178,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** allocation.backlog_model=exact, allocation.poisson_tol
 - **Known limitations:** Exact only given T; travel-time uncertainty not modelled. Tail truncation documented (P1-trunc).
 
-### P2 - Expected overflow  
+### P2 - Expected overflow
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `E[L_arr] = sum_n [b+n-B_max]^+ Pois(n; lambda T) = b + lambda T - E[B_arr]`
@@ -191,7 +191,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** allocation.poisson_tol
 - **Known limitations:** -
 
-### P3 - Certainty-equivalent backlog  
+### P3 - Certainty-equivalent backlog
 **Class:** D  approximation (needs validation)
 
 - **Expression:** `B_hat = min(B_max, b + lambda T)`
@@ -204,7 +204,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** allocation.backlog_model=ce
 - **Known limitations:** Gap largest when b+lambda T ~ B_max.
 
-### P4 - Truncated Poisson sum  
+### P4 - Truncated Poisson sum
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `n_hi = min(floor(B_max-b), Q_{1-tol}); tail by sum_{n>N} n p_n = m(1-F(N-1))`
@@ -217,7 +217,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** allocation.poisson_tol (1e-9)
 - **Known limitations:** BUG FOUND+FIXED: first version valued the tail at B_max (error ~tol*B_max).
 
-### SC1 - Service capacity (constant rate)  
+### SC1 - Service capacity (constant rate)
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `C = R T_contact`
@@ -230,7 +230,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** allocation.contact_time_s
 - **Known limitations:** -
 
-### SC2 - Service capacity (time-varying)  
+### SC2 - Service capacity (time-varying)
 **Class:** D  approximation (needs validation)
 
 - **Expression:** `C = integral R(tau) dtau`
@@ -243,7 +243,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** Utility function only; the environment uses constant hover rate (SC1).
 
-### SC3 - Collectable volume  
+### SC3 - Collectable volume
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `D_service = min{B_arr, C/q, free/q}`
@@ -256,7 +256,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** Prediction only; collection removes units once (Q4).
 
-### S1 - Value of information  
+### S1 - Value of information
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `VoI(tau) = sigma exp(-mu tau)`
@@ -269,7 +269,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** semantic.categories.*.mu
 - **Known limitations:** Decay law is a modelling choice. mu(high) NOT given in P1 (assumed = routine).
 
-### S2 - Packet semantic utility  
+### S2 - Packet semantic utility
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `U_k = d_k c_k sigma_k exp(-mu_k tau_k^e2e)`
@@ -282,7 +282,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** semantic.categories.*.c_priority
 - **Known limitations:** tau omits processing and USV->shore RF delay (P1 Eq.14).
 
-### S3 - Total utility  
+### S3 - Total utility
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `U = sum_k U_k`
@@ -295,7 +295,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** -
 
-### S4 - Normalised utilities  
+### S4 - Normalised utilities
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `U_norm = U / sum_generated c sigma ;  U_per_packet = U / N_del`
@@ -308,7 +308,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** U_norm can exceed 1 (c>1).
 
-### S5 - Packet importance  
+### S5 - Packet importance
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `sigma = clip(omega_sensor * sigma_factor(category), 0, 1)`
@@ -321,7 +321,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** semantic.categories, semantic.hotspot_weights
 - **Known limitations:** SIMPLIFICATION: P1 evolves omega_m(t) by a Markov chain and uses clusters; not reproduced.
 
-### S6 - Aggregate semantic density  
+### S6 - Aggregate semantic density
 **Class:** D  approximation (needs validation)
 
 - **Expression:** `u_j = E[c sigma]_j / max_k E[c sigma]_k`
@@ -334,7 +334,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** -
 
-### A1 - Semantic-service assignment cost  
+### A1 - Semantic-service assignment cost
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `C_ij = -w_b B~ - w_s U~ + w_d T~ + w_o L~ + w_c S~ + w_l W~ - w_a A~`
@@ -347,7 +347,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** allocation.weights.*
 - **Known limitations:** PROPOSED. semantic/overflow/workload/age terms are new; each ablated.
 
-### A2 - One-to-one assignment  
+### A2 - One-to-one assignment
 **Class:** A  established
 
 - **Expression:** `min sum C_ij x_ij s.t. sum_j x_ij = 1, sum_i x_ij <= 1`
@@ -360,7 +360,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** allocation.method
 - **Known limitations:** -
 
-### A3 - Priority score  
+### A3 - Priority score
 **Class:** A  established
 
 - **Expression:** `rho_ij = lambda_j b_j / B_j - alpha d_ij`
@@ -373,7 +373,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** allocation.priority_alpha
 - **Known limitations:** -
 
-### E1 - Propulsion power  
+### E1 - Propulsion power
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `P_prop = P0 + kappa v^3`
@@ -386,7 +386,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** energy.p0_w, energy.kappa
 - **Known limitations:** Coefficients are placeholders; calibrate before publication.
 
-### E2 - Propulsion energy  
+### E2 - Propulsion energy
 **Class:** A  established
 
 - **Expression:** `E_prop = P_prop dt`
@@ -399,7 +399,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** env.dt_s
 - **Known limitations:** -
 
-### E3 - Communication energy  
+### E3 - Communication energy
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `E_tx = P_tx t_air ; E_rx = P_rx t_rx`
@@ -412,7 +412,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** energy.p_tx_elec_w, acoustic.rx_power_w
 - **Known limitations:** Disjoint from E1/E4; processing power of P1 not modelled separately.
 
-### E4 - Computation energy  
+### E4 - Computation energy
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `E_comp = e_grad * (#gradient steps)`
@@ -425,7 +425,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** energy.e_grad_j
 - **Known limitations:** Zero in evaluation episodes (no learning); inference energy not modelled.
 
-### C1 - Thorp absorption  
+### C1 - Thorp absorption
 **Class:** A  established
 
 - **Expression:** `a(f)=0.11f^2/(1+f^2)+44f^2/(4100+f^2)+2.75e-4 f^2+0.003  [dB/km, f kHz]`
@@ -438,7 +438,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** acoustic.*.freq_khz
 - **Known limitations:** -
 
-### C2 - Transmission loss  
+### C2 - Transmission loss
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `TL = k 10log10(max(d,1 m)/1 m) + a(f) d/1000  [dB]`
@@ -451,7 +451,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** acoustic.spreading_k
 - **Known limitations:** DISCREPANCY: P1 Eq.(8) as printed gives TL<0 dB (gain) for d<1 km; this code uses the 1 m reference consistent with SL re 1 m. Clarify in the paper.
 
-### C3 - Ambient noise  
+### C3 - Ambient noise
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `N(f) = 10log10(sum of turbulence+shipping+wind+thermal in linear power)  [dB re uPa^2/Hz]`
@@ -464,7 +464,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** acoustic.shipping_s, acoustic.wind_mps
 - **Known limitations:** Empirical, valid for stated f range only.
 
-### C4 - Source level  
+### C4 - Source level
 **Class:** A  established
 
 - **Expression:** `SL = 170.8 + 10log10(eta P_elec) + DI  [dB re uPa @1m]`
@@ -477,7 +477,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** acoustic.*.p_elec_w, efficiency
 - **Known limitations:** Powers/efficiencies are ASSUMPTIONS.
 
-### C5 - Received SNR  
+### C5 - Received SNR
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `SNR_dB = SL - TL - (N(f)_dB + 10log10 B_Hz)`
@@ -490,7 +490,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** acoustic.*.bandwidth_hz
 - **Known limitations:** -
 
-### C6 - Achievable rate  
+### C6 - Achievable rate
 **Class:** D  approximation (needs validation)
 
 - **Expression:** `R = min(R_max, B log2(1+SNR_lin)) / 1e6  [Mbit/s]`
@@ -503,7 +503,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** acoustic.*.max_rate_mbps
 - **Known limitations:** Rate caps are ASSUMPTIONS and strongly shape results.
 
-### C7 - Propagation delay  
+### C7 - Propagation delay
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `tau = d / v_s`
@@ -516,7 +516,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** acoustic.sound_speed_mps
 - **Known limitations:** No refraction/multipath.
 
-### C8 - Rayleigh packet success  
+### C8 - Rayleigh packet success
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `P = exp(-gamma_th / SNR_mean)`
@@ -529,7 +529,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** acoustic.*.snr_threshold_db
 - **Known limitations:** Verified by Monte-Carlo. Per-step draw; no temporal fading correlation.
 
-### C9 - Contact/outage process  
+### C9 - Contact/outage process
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `range gate d_slant <= R_usv; Gilbert-Elliott outage P(up->down)=p_d, P(down->up)=p_r`
@@ -542,7 +542,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** acoustic.usv_link.*
 - **Known limitations:** Outage law is an assumption (no data).
 
-### M1 - Actor  
+### M1 - Actor
 **Class:** A  established
 
 - **Expression:** `a_i = mu_i(o_i), tanh output`
@@ -555,7 +555,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** matd3.hidden
 - **Known limitations:** -
 
-### M2 - Smoothed joint target action  
+### M2 - Smoothed joint target action
 **Class:** A  established
 
 - **Expression:** `a'_k = clip(mu'_k(o'_k) + clip(eps,-c,c), -1, 1) for ALL k`
@@ -568,7 +568,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** matd3.target_noise, matd3.noise_clip
 - **Known limitations:** -
 
-### M3 - Clipped double-Q target  
+### M3 - Clipped double-Q target
 **Class:** A  established
 
 - **Expression:** `y_i = r_i + gamma (1-d) min_k Q'_{i,k}(s', a')`
@@ -581,7 +581,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** matd3.gamma
 - **Known limitations:** -
 
-### M4 - Critic loss  
+### M4 - Critic loss
 **Class:** A  established
 
 - **Expression:** `L = E[(Q_{i,k}(s,a_1..a_M) - y_i)^2]`
@@ -594,7 +594,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** matd3.critic_lr, matd3.critic_mode
 - **Known limitations:** Training is NOT fully decentralised.
 
-### M5 - Deterministic policy gradient  
+### M5 - Deterministic policy gradient
 **Class:** A  established
 
 - **Expression:** `grad J = E[grad_a Q_{i,1}(s, a_{-i}, mu_i(o_i)) grad mu_i]`
@@ -607,7 +607,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** matd3.actor_lr
 - **Known limitations:** -
 
-### M6 - Delayed update + Polyak  
+### M6 - Delayed update + Polyak
 **Class:** A  established
 
 - **Expression:** `every d-th critic step: actor step; theta' <- tau theta + (1-tau) theta'`
@@ -620,7 +620,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** matd3.tau, matd3.policy_delay
 - **Known limitations:** -
 
-### F1 - Local update  
+### F1 - Local update
 **Class:** A  established
 
 - **Expression:** `Delta_i = theta_i^local - theta_i^base`
@@ -633,7 +633,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.local_steps_per_update
 - **Known limitations:** Delta is snapshotted when transmission STARTS.
 
-### F2 - Staleness  
+### F2 - Staleness
 **Class:** A  established
 
 - **Expression:** `Delta_i(stale) = r - v_i`
@@ -646,7 +646,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** -
 
-### F3 - Staleness factor  
+### F3 - Staleness factor
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `w_stale = exp(-kappa Delta)`
@@ -659,7 +659,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.kappa
 - **Known limitations:** Functional form unvalidated.
 
-### F3b - Max-staleness gate  
+### F3b - Max-staleness gate
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `accept iff 0 <= Delta <= Delta_max`
@@ -672,7 +672,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.max_staleness
 - **Known limitations:** -
 
-### F4 - Semantic-service relevance  
+### F4 - Semantic-service relevance
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `M = beta rho_sem + (1-beta) rho_svc;  rho_sem = U_mature/V_mature over the MATURE batches S_i of AUV i;  rho_svc = C/(C+L_own)`
@@ -685,7 +685,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.beta_sem, federated.maturity_eps
 - **Known limitations:** CHANGED (audit): numerator and denominator now describe the SAME batches, so no clipping is needed (bounded by construction; inconsistency raises). Undefined components (no mature batch / no sensor events) are dropped, not scored 0. Maturity horizon is a modelling choice. Own-sensor overflow depends on allocation, not only on the AUV's policy.
 
-### F13 - Batch-level attribution ledger  
+### F13 - Batch-level attribution ledger
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `key (pkt_id, t_collect) per AUV; V += units c sigma at collection; U += delivered utility at delivery; claim once when mature; censor at episode end`
@@ -698,7 +698,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.maturity_eps
 - **Known limitations:** Late delivery after claim-by-age is counted in late_units, not re-attributed (<= eps of the batch value). Batches of mu=0 mature only by full delivery.
 
-### F14 - Update lifecycle  
+### F14 - Update lifecycle
 **Class:** A  established
 
 - **Expression:** `created -> uploading -> in_flight -> buffered -> aggregated | rejected | expired; one outstanding update per client; only a 'commit' control message advances the reference`
@@ -711,7 +711,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.max_buffer_age_s, federated.upload_timeout_s
 - **Known limitations:** Client cannot withdraw an update once its last bit has left (no client-side expiry after in_flight).
 
-### F15 - Window-statistics settlement  
+### F15 - Window-statistics settlement
 **Class:** A  established
 
 - **Expression:** `AGGREGATED -> consumed; REJECTED/EXPIRED -> returned to the window if same episode else discarded; settled exactly once per update`
@@ -724,7 +724,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** Statistics returned after a rejection are re-reported by the NEXT update (their model progress is also still in its delta).
 
-### F5 - Aggregation weight  
+### F5 - Aggregation weight
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `Z_i = n_i^alpha exp(-kappa Delta_i) [eps_M + (1-eps_M) M_i]^eta`
@@ -737,7 +737,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.alpha, eta, eps_m
 - **Known limitations:** No convergence guarantee; no privacy guarantee.
 
-### F6 - Normalisation and cap  
+### F6 - Normalisation and cap
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `w_i = Z_i / sum_R Z_j; optional w_i <= w_max with iterative renormalisation`
@@ -750,7 +750,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.max_client_weight
 - **Known limitations:** Cap below 1/|R| infeasible -> uniform.
 
-### F7 - L2 clipping  
+### F7 - L2 clipping
 **Class:** A  established
 
 - **Expression:** `Clip_C(d) = d min(1, C/||d||_2)`
@@ -763,7 +763,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.clip_norm
 - **Known limitations:** No noise added -> no differential privacy.
 
-### F8 - Server aggregation  
+### F8 - Server aggregation
 **Class:** B  valid under stated assumptions
 
 - **Expression:** `theta^{r+1} = theta^r + eta_g sum_R w_i Clip(Delta_i)`
@@ -776,7 +776,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.server_lr
 - **Known limitations:** -
 
-### F9 - Global install  
+### F9 - Global install
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `theta_local <- b theta_g + (1-b) theta_local`
@@ -789,7 +789,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.download_blend
 - **Known limitations:** -
 
-### F10 - Transfer feasibility  
+### F10 - Transfer feasibility
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `progress += R*share*dt only when contact up and fading draw succeeds; received at t_tx_done + tau_prop`
@@ -802,7 +802,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.allow_fragmentation, acoustic.usv_link.model_share
 - **Known limitations:** -
 
-### F11 - Contact scheduler  
+### F11 - Contact scheduler
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `start iff link up (and, without fragmentation, airtime <= expected remaining window)`
@@ -815,7 +815,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** federated.allow_fragmentation
 - **Known limitations:** -
 
-### F12 - No aggregation before receipt  
+### F12 - No aggregation before receipt
 **Class:** A  established
 
 - **Expression:** `buffer only filled by USVServer.receive() after last bit arrives; duplicate update ids are ignored`
@@ -828,7 +828,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** -
 
-### R1 - Team + local reward  
+### R1 - Team + local reward
 **Class:** C  proposed (needs experimental justification)
 
 - **Expression:** `r_i = (1-zeta) r_team + zeta r_local + w_sh F;  r_team = w_u dU/U_ref - w_l L/L_ref - w_e E/E_ref - w_c C_coll - w_o C_bound`
@@ -841,7 +841,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** reward.*, federated.local_reward_weight
 - **Known limitations:** Magnitudes measured: random policy -391/episode, goal-seeking reference -21. Only the collision term has a dedicated unit test.
 
-### R2 - Potential-based shaping  
+### R2 - Potential-based shaping
 **Class:** D  approximation (needs validation)
 
 - **Expression:** `F = (|p-g| - gamma|p'-g|)/D_n`
@@ -854,7 +854,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** reward.w_shape
 - **Known limitations:** Invariance does not strictly hold when the target changes mid-episode (non-stationary potential). TEST GAP.
 
-### MET1 - Ratios  
+### MET1 - Ratios
 **Class:** A  established
 
 - **Expression:** `collection = collected/G; delivery (PDR) = delivered/G; delivered-of-collected = delivered/collected`
@@ -867,7 +867,7 @@ Generated from `scripts/equation_registry.py` (do not edit by hand). Classes: A 
 - **Config:** -
 - **Known limitations:** -
 
-### MET2 - Workload imbalance  
+### MET2 - Workload imbalance
 **Class:** A  established
 
 - **Expression:** `std(collected_i)/mean(collected_i)`
