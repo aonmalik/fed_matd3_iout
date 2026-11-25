@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import math
 import json
 import os
 from pathlib import Path
@@ -107,6 +108,14 @@ def validate_config(cfg) -> None:
         if float(a["contact_time_s"]) > horizon * (1 + 1e-9):
             bad.append(f"allocation.contact_time_s={a['contact_time_s']} exceeds max_hover_steps*dt_s={horizon}: the allocator "
                        "would assume more collectable volume than a visit can deliver")
+    ul = cfg.get("acoustic", {}).get("usv_link", {})
+    if "model_share" in ul:
+        try:
+            ms = float(ul["model_share"])
+        except (TypeError, ValueError):
+            ms = float("nan")
+        if not (math.isfinite(ms) and 0.0 <= ms <= 1.0):          # the pool is a FRACTION of one step's airtime (D7); NaN fails here
+            bad.append(f"acoustic.usv_link.model_share must be finite and within [0, 1] (got {ul['model_share']!r})")
     if f:
         if "maturity_eps" in f and not (0.0 < float(f["maturity_eps"]) < 1.0):
             bad.append("federated.maturity_eps must be in (0, 1)")

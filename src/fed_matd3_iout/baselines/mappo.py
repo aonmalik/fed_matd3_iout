@@ -7,8 +7,14 @@ evaluated with the numerically stable identity  log(1 - tanh(u)^2) = 2 (log 2 - 
 The rollout buffer stores the LATENT u (not the possibly saturated a), so the log-probability can be recomputed exactly in
 every PPO epoch.  (Protocol 2.1 sampled an unbounded Gaussian, stored its log-prob, and executed clip(a, -1, 1): the stored
 likelihood described a different action than the one executed whenever clipping happened.)
-Entropy bonus: entropy of the latent Gaussian (the exact entropy of the squashed distribution has no closed form); this is
-a regulariser on the latent spread, documented as such.
+Entropy bonus (Protocol 2.2, ``matd3.ppo.entropy``):
+  'squashed' (default): entropy of the EXECUTED tanh-squashed policy.  For a = tanh(u):  H(a) = H(u) + E_u[ sum_d log(1 - tanh(u_d)^2) ].
+      H(u) is the closed-form Gaussian entropy; the expectation has no closed form and is estimated with ONE reparameterised
+      sample u' = mu + sigma*eps per state (unbiased, differentiable in mu and log_std).  H(a) <= H(u) always, and the Jacobian
+      term penalises saturation near +-1.
+  'latent': Protocol 2.1/2.2-early behaviour -- entropy of the latent Gaussian only (a regulariser on the latent spread, NOT the
+      entropy of the executed policy).  Kept selectable so the earlier objective stays reproducible.
+Changing this term changes the learning objective of the MAPPO baseline (see PROTOCOL_2.2_CHANGELOG.md).
 Centralised value V(s, onehot(i)),
 GAE(gamma, lambda), clipped surrogate, entropy bonus.  Same environment, reward and experience budget
 (train_episodes x episode_steps) as the off-policy methods.  Not mathematically comparable in sample efficiency:
@@ -67,6 +73,12 @@ class GaussianActor(nn.Module):
     def mean_action(self, o):
         return torch.tanh(self.mu(o))
 
+    def squashed_entropy(self, o):
+        """Unbiased reparameterised estimate of H(tanh(u)) per state: H(u) + sum_d log(1 - tanh(u'_d)^2), u' ~ pi(.|o).  Shape (N,)."""
+        d = self.dist(o)
+        u = d.rsample()
+        return d.entropy().sum(-1) + tanh_log_det(u).sum(-1)
+
 
 class ValueNet(nn.Module):
     def __init__(self, in_dim, hidden):
@@ -84,6 +96,9 @@ class MAPPOTrainer:
         self.env = MultiAUVIoUTEnv(cfg)
         e, p, h = self.env, cfg["matd3"]["ppo"], int(cfg["matd3"]["hidden"])
         self.p = p
+        self.entropy_mode = str(p.get("entropy", "squashed"))
+        if self.entropy_mode not in ("squashed", "latent"):
+            raise ValueError(f"matd3.ppo.entropy must be 'squashed' or 'latent', got {self.entropy_mode!r}")
         self.meter = ComputeMeter()
         self.actor = GaussianActor(e.obs_dim, e.act_dim, h, p["init_log_std"]).to(device)
         self.value = ValueNet(e.state_dim + e.M, h).to(device)
@@ -129,7 +144,8 @@ class MAPPOTrainer:
                 c = float(self.p["clip"])
                 pl = -torch.min(ratio * advn[mb], ratio.clamp(1 - c, 1 + c) * advn[mb]).mean()
                 vl = ((self._v(S[mb]) - ret[mb]) ** 2).mean()
-                ent = d.entropy().sum(-1).mean()
+                ent = (self.actor.squashed_entropy(O[mb].reshape(-1, O.shape[-1])) if self.entropy_mode == "squashed"
+                       else d.entropy().sum(-1)).mean()
                 loss = pl + 0.5 * vl - float(self.p["entropy_coef"]) * ent
                 self.opt.zero_grad(set_to_none=True)
                 loss.backward()

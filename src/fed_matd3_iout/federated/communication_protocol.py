@@ -203,8 +203,11 @@ class FederatedProtocol:
                     c.stats["sync_latencies"].append(t - self.server.t_version.get(v, t))
                     c.download = None
                     c.awaiting_global = False
-            env.model_traffic_active[i] = (c.upload is not None) or (c.download is not None) or (c.ctrl is not None)
-            env.model_uplink_active[i] = c.upload is not None       # direction-aware reservation of the sensor-data uplink
+            # A transfer that has sent its LAST bit and only waits for propagation (done_tx, t < t_arrival) occupies no airtime and
+            # must not reserve any: only transfers with bytes still to send count (half duplex: any; full duplex: an upload).
+            on_air = lambda tr: tr is not None and not tr.done_tx
+            env.model_traffic_active[i] = on_air(c.upload) or on_air(c.download) or on_air(c.ctrl)
+            env.model_uplink_active[i] = on_air(c.upload)           # direction-aware reservation of the sensor-data uplink
             if tx_s or rx_s:
                 env.add_comm_energy(i, tx_s, rx_s)
                 c.stats["tx_s"] += tx_s

@@ -25,5 +25,6 @@ matd3:
     clip: 0.2
     gae_lambda: 0.95
     entropy_coef: 0.01
+    entropy: squashed       # squashed = entropy of the executed tanh policy (2.2) | latent = latent-Gaussian entropy only (earlier objective)
     lr: 3.0e-4
     init_log_std: -0.5

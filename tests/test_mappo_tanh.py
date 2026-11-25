@@ -101,3 +101,53 @@ def test_real_rollout_sends_bounded_finite_actions_to_the_environment(smoke_cfg,
     tr.train(1)
     assert seen and all(np.abs(a).max() <= 1.0 for a in seen)
     assert all(np.isfinite(a).all() for a in seen)
+
+
+# ---------------------------------------------------------------- entropy regulariser (matd3.ppo.entropy)
+def test_squashed_entropy_estimator_matches_numerical_entropy_of_the_density():
+    """1-D: -integral p(a) log p(a) da on a fine grid  vs  mean of the reparameterised estimator."""
+    a = GaussianActor(3, 1, 8, -0.3)
+    o = torch.zeros(1, 3)
+    grid = torch.linspace(-0.999999, 0.999999, 400001)
+    u = torch.atanh(grid).unsqueeze(-1)
+    lp = (a.dist(o.expand(len(grid), -1)).log_prob(u) - tanh_log_det(u)).sum(-1)
+    num = torch.trapz(-lp.exp() * lp, grid).item()
+    torch.manual_seed(0)
+    est = a.squashed_entropy(o.expand(200_000, -1)).mean().item()
+    assert est == pytest.approx(num, abs=0.02)
+
+
+def test_squashed_entropy_never_exceeds_latent_entropy_and_differs_from_it():
+    a = _actor(init_log_std=0.5)
+    o = torch.randn(4096, 7)
+    torch.manual_seed(1)
+    sq = a.squashed_entropy(o).mean()
+    lat = a.dist(o).entropy().sum(-1).mean()
+    assert sq < lat                                                       # E[log(1 - tanh^2)] < 0
+
+
+def test_squashed_entropy_gradients_are_finite_and_reach_mean_and_log_std():
+    a, o = _actor(init_log_std=2.0), torch.randn(256, 7)                  # wide policy: strong saturation
+    a.squashed_entropy(o).mean().backward()
+    assert all(p.grad is not None and torch.isfinite(p.grad).all() for p in a.parameters())
+    assert a.log_std.grad.abs().sum() > 0 and a.mu[0].weight.grad.abs().sum() > 0
+
+
+def test_entropy_option_is_validated_and_both_modes_update(smoke_cfg):
+    cfg = smoke_cfg
+    cfg["matd3"]["ppo"]["entropy"] = "bogus"
+    with pytest.raises(ValueError, match="entropy"):
+        MAPPOTrainer(cfg, torch.device("cpu"), train_seed=0)
+    for mode in ("squashed", "latent"):
+        cfg["matd3"]["ppo"]["entropy"] = mode
+        tr = MAPPOTrainer(cfg, torch.device("cpu"), train_seed=0)
+        assert tr.entropy_mode == mode
+        M, sd, od, T = tr.env.M, tr.env.state_dim, tr.env.obs_dim, 64
+        O = torch.randn(T, M, od)
+        with torch.no_grad():
+            act, u, lp = tr.actor.sample(O.reshape(-1, od))
+        buf = {"s": list(np.zeros((T, sd), dtype=np.float32)), "s2": list(np.zeros((T, sd), dtype=np.float32)), "o": list(O.numpy()),
+               "a": list(act.reshape(T, M, -1).numpy()), "u": list(u.reshape(T, M, -1).numpy()), "lp": list(lp.reshape(T, M).numpy()),
+               "r": list(np.ones((T, M), dtype=np.float32)), "last": [0.0] * (T - 1) + [1.0]}
+        info = tr._update(buf)
+        assert math.isfinite(info["policy_loss"]) and math.isfinite(info["value_loss"])

@@ -14,9 +14,11 @@ Real modem duplex capability unknown; no modem turnaround, guard time, preamble 
 No power instrument in the build environment: compute energy is `not_measured` for every method (compute time is measured). MATD3's modelled `e_grad_j` charge is an assumption; MAPPO charges nothing. Cross-method TRAINING total-energy comparisons are incomplete and must not support energy-efficiency claims. Hardware measurement (RAPL/GPU counters, idle subtraction, per-process attribution) is future work.
 
 ## E. Drain horizon
+The 600 s provisional drain covers the asynchronous server-side bound (521.1 s) but NOT the synchronous one (701.1 s); a synchronous pilot must set `final_drain_s` explicitly. The bound never covers the final downlink notification.
 A deterministic server-side bound (521.1 s) exists; the client-notification and download legs have none (contact/outage). A drain can end with unresolved updates (reported). The effect of the drain on the final global model is unmeasured at scale.
 
 ## F. Method / evaluation concerns kept visible
+* MAPPO entropy: the bonus now uses an unbiased but noisy (one-sample) estimate of the squashed-policy entropy; `entropy_coef` (0.01) was not re-tuned and its effect on MAPPO is unmeasured. Earlier MAPPO numbers (latent-entropy objective) are not comparable.
 * Relevance dynamic range: relevance has little influence under symmetric clients in the tested reference policies (TV vs uniform ≈ 1.5% in the 2.1 diagnostics); **no tuning of `eta`, `eps_m` or normalisation was done or is proposed without approval**; heterogeneous-client diagnostics are descriptive only. A null result for the semantic/service ablation is possible.
 * MAPPO is not like-for-like (N2/N3/N4/N11). Critics are CTDE and not communication-constrained. `n_samples` = replay-sample presentations (steps × batch), not unique transitions; aggregation is not unbiased FedAvg. Backlog clearance is not fixed-workload completion; fixed-workload times with censoring are lower bounds on the mean.
 * No differential privacy / secure aggregation. 10 seeds do not guarantee significance; attainability of Holm-corrected tests is not power.

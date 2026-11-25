@@ -17,6 +17,16 @@ test suite, not independently re-derived).
 | C4 | Non-finite statistics / sample counts rejected at receipt (`non_finite_metadata`); never merged into the window. | `federated/usv_server.py`, env | [P] |
 | C5 | A transfer whose remaining bytes vanish by rounding completes. | `communication/model_transfer.py` | [P] |
 
+## Review corrections before pilot (made after the first candidate commit; tag [S2])
+| ID | Change | Files |
+|---|---|---|
+| R1 | Pilot script now describes/targets Protocol 2.2: default output `results/pilot_protocol22`; refuses a 2.1-named directory for a 2.2 run (exit 2); dry run prints protocol, manifest hash, effective run hash, output dir, drain and mode; summary records `manifest_config_hash`, `config_hash`, overrides, decision status. | `scripts/run_pilot_2seeds.py`, `tests/test_pilot_script.py` |
+| R2 | Drain bound is mode-aware: async `agg_timeout_s` (521.1 s), sync `sync_timeout_s` (701.1 s, conservative), both capped by `max_buffer_age_s`, plus upload timeout, propagation and final step. Server-side only; the downlink notification is not guaranteed. | `federated/drain_bound.py`, `tests/test_drain_bound_modes.py` |
+| R3 | Config validation: `acoustic.usv_link.model_share` finite and within [0, 1] (default 0.5 kept). | `utils/config.py`, `tests/test_model_share_validation.py` |
+| R4 | A transfer that finished sending and only awaits propagation no longer sets `model_traffic_active` / `model_uplink_active` (sensor-uplink reservation); half/full duplex semantics unchanged. | `federated/communication_protocol.py`, `tests/test_reservation_flag.py` |
+| R5 | **MAPPO learning objective changed:** entropy bonus is now the entropy of the executed tanh-squashed policy, H(u) + E[Σ log(1−tanh²u)] (one reparameterised sample per state), replacing the latent-Gaussian entropy. New config `matd3.ppo.entropy: squashed \| latent` (`latent` reproduces the earlier term). Any MAPPO result produced before this change is not comparable. | `baselines/mappo.py`, `configs/matd3.yaml`, `tests/test_mappo_tanh.py` |
+Manifest: 2.2 hash re-frozen with the canonical `config_hash` after the config change (R5); changelog note extended. Not changed: D1–D10, `eta`, `eps_m`, relevance normalisation, retry parameters, `final_drain_s`.
+
 ## Metric / reporting changes
 * `completion_time_s` → `backlog_clearance_time_s` (+ `backlog_clearance_censored`); same definition; legacy aliases kept. [P]
 * **D10** separate `fixed_workload_completion_time_s` (+ censored flag, delivered fraction); `backlog_clearance_time_s` untouched. `evaluation/fixed_workload.py`. [P]
@@ -25,11 +35,11 @@ test suite, not independently re-derived).
 * `n_samples` semantics documented (formula unchanged); relevance distribution diagnostics (`rho_sem`, `rho_svc` per round, diagnostic only). [P]
 
 ## Configuration changes (2.1 → 2.2)
-`experiment.protocol_version: "2.2"`; `acoustic.usv_link.duplex: half` (D7); `federated.final_drain_s: 600.0` (D8, PROVISIONAL pilot value; 2.1 behaviour = 0); `experiment.fixed_workload_eval: true` (D10); `utils/config.py` rejects `final_drain_s < 0`. No scientific parameter of D1–D6 changed; `eta`, `eps_m`, relevance normalisation, `maturity_eps`, retry parameters untouched.
+`experiment.protocol_version: "2.2"`; `acoustic.usv_link.duplex: half` (D7); `federated.final_drain_s: 600.0` (D8, PROVISIONAL pilot value; 2.1 behaviour = 0); `matd3.ppo.entropy: squashed` (R5), `experiment.fixed_workload_eval: true` (D10); `utils/config.py` rejects `final_drain_s < 0`. No scientific parameter of D1–D6 changed; `eta`, `eps_m`, relevance normalisation, `maturity_eps`, retry parameters untouched.
 
 ## Compatibility
 2.1 results of federated methods and MAPPO are not comparable with 2.2 (C1–C3, D8). Metric aliases keep 2.1 tables readable. Non-federated, non-MAPPO learners are unchanged, but the shared environment code was edited, so equivalence with 2.1 is not claimed without a re-run.
 
 ## Tests (new files)
-`test_comm_capacity.py`, `test_d7_half_duplex.py` [S], `test_backlog_clearance.py`, `test_final_drain.py`, `test_d8_drain_policy.py`, `test_d9_compute_energy.py`, `test_d10_fixed_workload.py`, `test_mappo_tanh.py`, `test_protocol22_audit.py`, `test_relevance_distributions.py`, `test_sample_count_semantics.py` [P except D7]; `test_manifest_validator.py` modified [P]. Counts: see CORRECTION_REPORT (from the executed run).
+`test_comm_capacity.py`, `test_d7_half_duplex.py` [S], `test_drain_bound_modes.py`, `test_model_share_validation.py`, `test_reservation_flag.py`, `test_pilot_script.py` [S2], `test_backlog_clearance.py`, `test_final_drain.py`, `test_d8_drain_policy.py`, `test_d9_compute_energy.py`, `test_d10_fixed_workload.py`, `test_mappo_tanh.py`, `test_protocol22_audit.py`, `test_relevance_distributions.py`, `test_sample_count_semantics.py` [P except D7]; `test_manifest_validator.py` modified [P]. Counts: see CORRECTION_REPORT (from the executed run).
 Other artefacts: `docs/final_validation_report.json` regenerated for 2.2 after the local commit (two-stage procedure in CORRECTION_REPORT); `docs/aggregation_diagnostics.json` regenerated.
