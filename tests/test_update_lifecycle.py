@@ -154,3 +154,64 @@ def test_sync_and_async_modes(cfg, mode):
     if mode == "sync":
         first = srv.history[0]
         assert sorted(first["clients"]) == [0, 1]                      # barrier: first round waited for both clients
+
+
+# ----------------------------------------------------------------------------- 9
+
+def test_terminal_outcome_waits_through_control_outage_then_resolves_once(cfg):
+    """A server commit is authoritative, but the client stays outstanding until its downlink arrives."""
+    cs, srv, proto, env = build(cfg, 1, agg_buffer_size=1)
+    c = cs[0]
+    perturb(c)
+    _ready(c)
+    env.inject(0, coll_mbit=5.0, owned_loss_mbit=2.0, U_mature=3.0, V_mature=4.0)
+
+    # Create and transmit one real update, then freeze creation of any subsequent update.
+    proto.step(env, 0.0)
+    proto.accept_new = False
+    pkt = c.outstanding
+    assert pkt is not None and pkt.status is UpdateStatus.IN_FLIGHT
+
+    # The server receives and aggregates the update while the link is healthy.
+    proto.step(env, 1.0)
+    assert pkt.status is UpdateStatus.AGGREGATED
+    assert pkt.stats_disposition == "consumed"
+    assert not pkt.client_resolved and c.outstanding is pkt
+    assert proto.statistics_accounting()["balanced"]
+    assert proto.n_status["aggregated"] == 1
+    assert len(proto.update_log) == 1
+
+    # The terminal commit is now queued. An outage starts before the client can receive it.
+    env.links[0] = link(success=False)
+    proto.step(env, 2.0)
+    pending = proto.pending_report()
+    assert pending["awaiting_terminal_outcome_at_client"] == 1
+    assert pending["control_transfers_active"] == 1
+    assert c.ctrl is not None and [m.kind for m in c.ctrl.payload] == ["receipt", "commit"]
+    assert pending["control_messages_queued"] == 0
+    assert proto.drain_active()
+    assert not pkt.client_resolved and c.outstanding is pkt
+    assert proto.statistics_accounting()["balanced"]
+
+    # Restore contact: the queued/in-progress terminal control message must resolve the same packet.
+    env.links[0] = link(success=True)
+    for t in range(3, 20):
+        proto.step(env, float(t))
+        if pkt.client_resolved:
+            break
+
+    assert pkt.client_resolved and c.outstanding is None
+    assert proto.pending_report()["awaiting_terminal_outcome_at_client"] == 0
+    assert not proto.drain_active()
+    assert c.stats["commits"] == 1
+    assert proto.n_status["aggregated"] == 1
+    assert len(proto.update_log) == 1
+    assert proto.statistics_accounting()["balanced"]
+    assert sum(proto.stats_disposition.values()) == 1
+
+    # Replaying the same terminal control is idempotent and cannot settle or commit twice.
+    replay = ControlMessage("commit", pkt.uid, pkt.client_id, pkt.update_id, srv.version, "aggregated")
+    assert c.handle_control(replay, 20.0) == "duplicate"
+    assert c.stats["commits"] == 1
+    assert c.stats["duplicate_ctrl"] == 1
+    assert len(proto.update_log) == 1
