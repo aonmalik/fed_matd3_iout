@@ -62,3 +62,20 @@ def test_committed_report_matches_code_configuration_and_commit(cfg):
     assert prov["source_tree_hash"] == source_tree_hash(ROOT), "code changed after the report was generated"
     r = subprocess.run(["git", "merge-base", "--is-ancestor", prov["commit"], "HEAD"], cwd=ROOT, capture_output=True)
     assert r.returncode == 0, "recorded commit is not an ancestor of HEAD"
+
+
+def test_committed_report_has_unambiguous_schema3_sections_and_matches_tree(cfg):
+    """Schema 3: main suite / self-check / overall are separate; counts are consistent; the report matches the checked-out source."""
+    from fed_matd3_iout.validation import suite as S
+    rep = json.load(open(REPORT))
+    t = rep["tests"]
+    m = t["main_suite"]
+    assert m["counts_available"] and m["counts_consistent"] and m["total"] == m["executed"] + m["deselected_count"]
+    assert m["executed"] == m["passed"] + m["failed"] + m["errors"] + m["skipped"] and m["exit_code"] == 0 and m["passed_all_executed"]
+    assert m["deselected"] == list(S.SELF_CHECKS) and "--deselect" in m["command"]
+    assert t["committed_report_self_check"]["executed_separately"] is False and t["committed_report_self_check"]["record_file"].endswith("selfcheck.json")
+    prov = rep["provenance"]
+    problems = S.verify_report_against_tree(rep, current_source_hash=source_tree_hash(ROOT), current_config_hash=config_hash(cfg),
+                                            head_commit=subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip(),
+                                            is_ancestor=lambda c, h: subprocess.run(["git", "merge-base", "--is-ancestor", c, h], cwd=ROOT).returncode == 0)
+    assert problems == [], problems

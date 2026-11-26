@@ -48,3 +48,24 @@ each can be reversed by config where noted. D1–D6 are referenced, not restated
 * **Definition (`evaluation/fixed_workload.py`):** workload = initial sensor buffers of the evaluation scenario (same seed for every method); arrivals disabled (`traffic.scale = 0`); authoritative completion event = unit **delivered to the USV** (collected / assigned / onboard / transmitted / acknowledged do not count); clock starts at reset, stops at the end of the first step with delivered ≥ W (resolution = one step; includes collection, travel, queueing and uplink incl. airtime shared with model traffic); timeout = episode horizon ⇒ right-censored (kept, value = timeout); lost units ⇒ censored `failed_units`; W = 0 ⇒ completes at 0, flagged `zero_workload`; arrivals detected ⇒ `fixed_workload_violated`. Aggregation: scenarios → mean per training seed → seeds as units; the mean of censored values is a lower bound, so always report the censoring rate.
 * **Config:** `experiment.fixed_workload_eval: true`. **Tests:** `tests/test_d10_fixed_workload.py`. **Comparability:** valid only under identical workload and measurement conditions; methods still differ by the declared non-equivalences.
 * **Status: implemented, tested, provisional, requires approval.** Choice of workload (initial buffers) and of the threshold-free completion rule is a proposal.
+
+### D8 — Drain Semantics and Continued Mission Dynamics
+
+*Status: documents the existing implementation (inspected, not changed). Provisional like the rest of D8; not approved by the author.*
+
+A drain step is a **full `env.step()`** on the training environment (`Trainer.finalize()`), with learning frozen (`proto.accept_new=False`). It is **not** a communication-only freeze. Retained because pending uploads/aggregation/downloads need simulated time and the model-share pool shares the half-duplex modem with the sensor uplink (D7); freezing the environment would remove that coupling. The three activity classes are kept distinct:
+
+| # | Question | Answer during drain | Class |
+|---|---|---|---|
+| 1 | Sensor arrivals continue? | **Yes** (Poisson arrivals, same RNG stream) | mission-state evolution |
+| 2 | AUV movement continues? | **Yes** (current deterministic local actors, no exploration noise; episode truncation is ignored) | mission-state evolution |
+| 3 | Task allocation continues? | **Yes** | mission-state evolution |
+| 4 | Task execution / service continues? | **Yes** (collection, service, hover) | mission-state evolution |
+| 5 | Sensor-data uplink continues? | **Yes** (and still takes airtime from the model pool, D7) | mission-state evolution |
+| 6 | Communication transfers continue? | **Yes**: uploads, control, aggregation, downlink progress, retries/expiry apply | communication progress |
+| 7 | New federated updates generated? | **No** | training/learning |
+| 8 | Gradient computation / policy optimisation? | **No** (also no replay-buffer writes, no new episodes) | training/learning |
+| 9 | Drain energy in reported energy? | **No**: not in logged episode energy nor evaluation energy; recorded separately in `termination["drain_mission"]` (deltas of generated/delivered/lost Mbit and propulsion/tx/rx/compute J) | energy |
+| 10 | Evaluation starts when? | **After the drain ends** (all updates resolved, or the bounded budget expired), on freshly reset scenario episodes (the evaluator builds a new environment; no drain state carries over) | ordering |
+
+Unresolved updates at drain expiry are never discarded silently: they are counted in `unresolved_at_drain_expiry`, `pending_at_evaluation_start`, and `evaluation_started_with_unresolved`. The record is machine-readable in `termination["drain_semantics"]` (constant `DRAIN_SEMANTICS`). Verified by `tests/test_d8_drain_semantics.py` and `tests/test_d8_drain_policy.py`, `tests/test_final_drain.py`. Open question for the author: whether a communication-only freeze (environment not stepped) is preferred; this would be a protocol change.

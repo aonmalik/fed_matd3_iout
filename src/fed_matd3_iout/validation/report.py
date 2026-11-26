@@ -17,7 +17,7 @@ from ..utils.config import config_hash
 from ..utils.manifest import validate_manifest
 from . import aggregation_diagnostics, fairness, lifecycle_scenarios, matd3_checks, relevance_checks, statistics_checks
 
-SCHEMA = "fed_matd3_iout.final_validation/2"
+SCHEMA = "fed_matd3_iout.final_validation/3"
 
 
 def _git(root: Path, *args) -> str:
@@ -131,7 +131,7 @@ def build_report(cfg, root: Path, probe_episodes: int = 0, sensitivity_scenarios
            "tests": tests_summary if ran else {"status": "not_run", "note": "this invocation did not run the full test suite; no test result is claimed"},
            "sections": sec,
            "evidence": {"implementation_checks_passed": bool(checks_ok),
-                        "full_test_suite_executed": bool(ran), "full_test_suite_passed": (tests_summary.get("returncode") == 0 and tests_summary.get("failed", 1) == 0
+                        "full_test_suite_executed": bool(ran), "full_test_suite_passed": (tests_summary.get("returncode") == 0 and not (tests_summary.get("main_suite") or {}).get("interrupted") and tests_summary.get("failed", 1) == 0
                                                       and tests_summary.get("errors", 1) == 0 and tests_summary.get("passed", 0) > 0) if ran else None,
                         "empirical_performance_evidence": "none: no comparative experiment has been run",
                         "scientific_claims_supported": [],

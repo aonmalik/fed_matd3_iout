@@ -27,6 +27,17 @@ from .local_training import local_update
 TRAIN_OFFSET_STRIDE = 10_000
 
 
+# D8: what a drain step does (documented in docs/PROTOCOL_2.2_DECISION_LOG.md; asserted by tests/test_d8_drain_semantics.py)
+DRAIN_SEMANTICS = {
+    "communication_progress": {"transfers_progress": True, "aggregation_and_terminal_messages_progress": True, "new_federated_updates": False},
+    "mission_state_evolution": {"sensor_arrivals": True, "task_allocation": True, "auv_motion": True, "service_and_collection": True,
+                                "sensor_data_uplink": True, "link_process": True, "actors_used": "current deterministic local actors (no exploration noise)"},
+    "training_and_learning": {"gradient_steps": False, "policy_optimisation": False, "replay_writes": False, "new_episodes": False},
+    "energy": {"drain_energy_in_reported_episode_energy": False, "drain_energy_in_evaluation_energy": False, "drain_energy_recorded_separately": True},
+    "evaluation_starts": "after the drain ends (all resolved, or the bounded budget expired), on freshly reset scenario episodes",
+}
+
+
 class Trainer:
     def __init__(self, cfg, device, run_dir: str | Path | None = None, train_seed: int = 0, logger: RunLogger | None = None):
         self.cfg, self.device = cfg, device
@@ -123,9 +134,11 @@ class Trainer:
         agg_cut = self.proto.n_status["aggregated"]
         env = self.env
         steps = 0
+        snap0 = self._drain_snapshot()
         if budget > 0.0 and self.proto.drain_active():
             obs = env._obs_all()
             pols = self.local_policies()
+            previous_accept_new = self.proto.accept_new
             self.proto.accept_new = False
             try:
                 while steps * env.dt < budget and self.proto.drain_active():
@@ -136,8 +149,9 @@ class Trainer:
                         self.log.log("aggregation", rec)
                     steps += 1
             finally:
-                self.proto.accept_new = True
+                self.proto.accept_new = previous_accept_new
         end = self.proto.pending_report()
+        snap1 = self._drain_snapshot()
         self.termination = {
             "federated": True, "drain_budget_s": budget, "drain_steps": steps, "drain_s": steps * env.dt,
             "t_training_cutoff_s": t_cutoff, "t_evaluation_start_s": self.global_time,
@@ -155,8 +169,30 @@ class Trainer:
             "resolved_during_drain": cut["unresolved_total"] - end["unresolved_total"],
             "unresolved_at_drain_expiry": end["unresolved_total"],
             "evaluation_started_with_unresolved": bool(end["unresolved_total"] > 0),
-            "statistics_accounting": self.proto.statistics_accounting()}
+            "statistics_accounting": self.proto.statistics_accounting(),
+            "drain_semantics": dict(DRAIN_SEMANTICS),
+            "drain_mission": self._drain_delta(snap0, snap1)}
         return self.termination
+
+    def _drain_snapshot(self) -> dict | None:
+        """Mission/energy counters of the training environment (None if the environment exposes none, e.g. test stubs)."""
+        env = self.env
+        en = getattr(env, "energy", None)
+        if en is None or not hasattr(env, "accounting"):
+            return None
+        acc = env.accounting()
+        return {"step_idx": int(getattr(env, "step_idx", 0)), "generated_mbit": float(acc["G"]), "delivered_mbit": float(acc["delivered"]),
+                "lost_mbit": float(acc["lost"]), "E_prop_j": float(sum(en.prop)), "E_tx_j": float(sum(en.tx)),
+                "E_rx_j": float(sum(en.rx)), "E_comp_j": float(sum(en.comp))}
+
+    @staticmethod
+    def _drain_delta(a: dict | None, b: dict | None) -> dict:
+        if a is None or b is None:
+            return {"available": False}
+        d = {k: b[k] - a[k] for k in a}
+        d.update(available=True, included_in_reported_training_energy=False, included_in_evaluation_energy=False,
+                 note="accrued on the training environment after the last logged episode; evaluation resets fresh scenarios")
+        return d
 
     # ------------------------------------------------------------------ policies for evaluation
     def local_policies(self):
