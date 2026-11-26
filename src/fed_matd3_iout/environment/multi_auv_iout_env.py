@@ -26,6 +26,7 @@ from ..allocation.service_arrival_predictor import certainty_equivalent_backlog,
 from ..allocation.task_allocator import TaskAllocator
 from ..communication.acoustic_channel import AcousticLink
 from ..communication.packet_delivery import LinkProcess, LinkState
+from ..semantic.attribution import BatchBook
 from ..semantic.mission_criticality import build_categories, mean_semantic_value_density
 from ..semantic.semantic_utility import UtilityLedger
 from ..utils.seed import make_rng
@@ -39,6 +40,10 @@ from .usv import USV
 
 
 class MultiAUVIoUTEnv:
+    # additive per-client window statistics (all merged by return_window_stats)
+    WINDOW_KEYS = ("coll_mbit", "owned_loss_mbit", "steps",
+                   "U_mature", "V_mature", "units_del_mature", "units_coll_mature", "n_mature_batches")
+
     def __init__(self, cfg):
         self.cfg = cfg
         e = cfg["env"]
@@ -67,13 +72,28 @@ class MultiAUVIoUTEnv:
         self.action_space = spaces.Box(-1.0, 1.0, (self.M, 2), np.float32)
         self.act_dim = 2
         self.model_traffic_active = np.zeros(self.M, dtype=bool)
+        self.model_uplink_active = np.zeros(self.M, dtype=bool)     # an upload is in progress (direction-aware reservation)
+        self.sensor_uplink_airtime_s = np.zeros(self.M)             # airtime the sensor-data uplink used in the LATEST env step
         self.episode_offset = 0
         self.step_idx = 0
+        # Unique id of the current episode: increments on EVERY reset (episode_offset can repeat, e.g. in evaluation).
+        # Window statistics carry it so that statistics of one episode can never be merged into another (audit item 3).
+        self.episode_id = 0
+        self.maturity_eps = float(cfg["federated"]["maturity_eps"])
+        self.book: BatchBook | None = None
+        self.censored_V_total = 0.0            # unclaimed collected value discarded at episode resets (diagnostic)
+        self.stats_returned = 0                # window-statistics returns merged / refused (diagnostics)
+        self.stats_refused_episode = 0
 
     # ------------------------------------------------------------------ reset
     def reset(self, episode_offset: int = 0):
         cfg, e = self.cfg, self.cfg["env"]
         s = cfg["seeds"]
+        if self.book is not None:                                  # censor the previous episode's unclaimed batches
+            self.book.reset_episode()
+            self.censored_V_total += self.book.censored_V
+        self.episode_id += 1
+        self.book = BatchBook(self.M, self.maturity_eps)
         self.episode_offset = int(episode_offset)
         self.rng_layout = make_rng(s["layout"], "layout", episode_offset)
         self.rng_arr = make_rng(s["arrivals"], "arrivals", episode_offset)
@@ -117,11 +137,17 @@ class MultiAUVIoUTEnv:
         self.collected_units_by_auv = np.zeros(self.M)
         self.boundary_viol = np.zeros(self.M)
         self.travel_by_auv = np.zeros(self.M)
-        self.win = {k: np.zeros(self.M) for k in ("U_del", "V_coll", "coll_mbit", "owned_loss_mbit", "steps", "units_del", "units_coll")}
+        # Window statistics.  coll_mbit / owned_loss_mbit / steps are accumulated per step.  The *_mature keys are NOT
+        # accumulated here: they come from BatchBook.claim() when an update is created, and are only re-filled by
+        # return_window_stats() when a non-committed update hands its statistics back (same episode only).
+        self.win = {k: np.zeros(self.M) for k in self.WINDOW_KEYS}
+        self._prev_comm_e = np.zeros(self.M)       # audit fix: energy-delta baseline must restart with the new EnergyAccount
         self.need_alloc = set(range(self.M))
         self.comm_tx_s = np.zeros(self.M)
         self.comm_rx_s = np.zeros(self.M)
         self.model_traffic_active[:] = False
+        self.model_uplink_active[:] = False
+        self.sensor_uplink_airtime_s[:] = 0.0
         self.last_realloc = 0
         self.ep_comp = np.zeros(self.M)
         self.rew_comp_sum = {k: 0.0 for k in ("utility", "overflow", "energy", "collision", "boundary", "shape")}
@@ -274,6 +300,7 @@ class MultiAUVIoUTEnv:
         self.links = self.link_proc.step(self._slant())
         dU_total = 0.0
         dU_auv = np.zeros(self.M)
+        self.sensor_uplink_airtime_s[:] = 0.0
         for a in self.auvs:
             i = a.aid
             l = self.links[i]
@@ -284,15 +311,14 @@ class MultiAUVIoUTEnv:
             else:
                 a.belief_age += dt
             if l.up and l.success and a.onboard:
-                share = 1.0 - float(cfg["acoustic"]["usv_link"]["model_share"]) if self.model_traffic_active[i] else 1.0
+                share = self._sensor_uplink_share(i)
                 cap_mbit = l.rate_mbps * dt * share
                 sent_mbit, du = self._uplink(a, cap_mbit, t, l)
                 dU_total += du
                 dU_auv[i] = du
-                airtime = sent_mbit / max(l.rate_mbps * share, 1e-12)
+                airtime = sent_mbit / max(l.rate_mbps, 1e-12)             # time on air at the full rate (<= share * dt)
+                self.sensor_uplink_airtime_s[i] = airtime                 # the protocol may only grant model traffic the rest
                 self.energy.tx[i] += float(en["p_tx_elec_w"]) * airtime
-                self.win["U_del"][i] += du
-                self.win["units_del"][i] += self._du_auv[i]
         # propulsion energy ledger (Eq. E1/E2); hover => v = 0 => only baseline power P0
         for a in self.auvs:
             self.energy.prop[a.aid] += propulsion_power(a.v, p0, kap) * dt
@@ -342,6 +368,17 @@ class MultiAUVIoUTEnv:
         info["obs_all"] = obs
         return obs, r.astype(np.float32), False, truncated, info
 
+    def _sensor_uplink_share(self, i: int) -> float:
+        """Fraction of one step's airtime the sensor-data uplink of AUV ``i`` may use.
+
+        Sensor data and model traffic share the AUV's USV-link modem.  Half duplex: any model transfer (either direction) reserves
+        ``model_share``; full duplex: only an upload does (the downlink is a separate budget).  Reflects the transfers that were
+        active after the previous protocol step; the protocol additionally caps the model grant by the airtime already used here.
+        """
+        ul = self.cfg["acoustic"]["usv_link"]
+        reserved = self.model_traffic_active[i] if str(ul.get("duplex", "half")) == "half" else self.model_uplink_active[i]
+        return 1.0 - float(ul["model_share"]) if reserved else 1.0
+
     def _owned_loss_step(self, i: int) -> float:
         return float(self._loss_owned_step[i])
 
@@ -374,14 +411,13 @@ class MultiAUVIoUTEnv:
             b.status, b.t_collect, b.collected_by = "onboard", (t + 1) * self.dt, a.aid
             a.onboard.append(b)
             units += b.units
-            self.win["V_coll"][a.aid] += b.units * b.c * b.sigma
+            self.book.on_collect(a.aid, b)             # identity of the collected batch is kept for later attribution
         mbit = units * self.q
         a.onboard_mbit += mbit
         a.collected_mbit += mbit
         a.served_units += units
         a.service_time_s += self.dt if units > 0 else 0.0
         self.win["coll_mbit"][a.aid] += mbit
-        self.win["units_coll"][a.aid] += units
         self.collected_units_by_auv[a.aid] += units
         self.energy.rx[a.aid] += float(self.cfg["acoustic"]["rx_power_w"]) * (mbit / max(self.sensor_rate, 1e-12))
         s.last_served_step = t
@@ -412,7 +448,9 @@ class MultiAUVIoUTEnv:
                 a.onboard[0] = rest
                 sent = cap_mbit
             chunk.status = "delivered"
-            dU += self.ledger.record(chunk, t_del - chunk.t_gen, auv=a.aid)
+            u = self.ledger.record(chunk, t_del - chunk.t_gen, auv=a.aid)
+            self.book.on_deliver(a.aid, chunk, u)      # utility goes to the batch it was COLLECTED in, not to "now"
+            dU += u
             du_units += chunk.units
         a.onboard_mbit = max(0.0, a.onboard_mbit - sent)
         if not a.onboard:
@@ -477,18 +515,44 @@ class MultiAUVIoUTEnv:
         self.comm_tx_s[i] += tx_s
         self.comm_rx_s[i] += rx_s
 
-    def win_restore(self, i: int, stats: dict) -> None:
-        """Return window statistics of an update that was never received so they are not lost."""
-        for k, v in stats.items():
-            if k in self.win:
-                self.win[k][i] += v
-
     def pop_window_stats(self, i: int) -> dict:
-        """Measured rollout statistics since the last call (used for the semantic-service relevance score)."""
+        """Take client ``i``'s window statistics for a new update (they now belong to that update, exactly once).
+
+        Per-step quantities (collected Mbit, owned-sensor overflow) are popped from the running window.  Semantic
+        quantities come from the batch ledger: only MATURE collected batches are claimed (see semantic/attribution.py);
+        immature ones stay open for a later update.  Anything previously handed back by a non-committed update is
+        already inside the window and is therefore included here.  The caller must record ``self.episode_id`` with
+        the update so the statistics can be refused by a later episode.
+        """
         out = {k: float(v[i]) for k, v in self.win.items()}
         for v in self.win.values():
             v[i] = 0.0
+        c = self.book.claim(i, self.step_idx * self.dt)
+        for k in ("U_mature", "V_mature", "units_del_mature", "units_coll_mature", "n_mature_batches"):
+            out[k] += c[k]
+        out["n_immature_batches"] = c["n_immature_batches"]          # diagnostic only (not additive, not returned)
         return out
+
+    def return_window_stats(self, i: int, stats: dict, episode_id: int) -> bool:
+        """Hand the statistics of a NON-committed update (rejected / expired) back to the client's window.
+
+        Policy: statistics follow the model progress they describe.  A rejected/expired update did not commit its
+        progress (the client's reference is unchanged, so the next delta still contains it); its statistics are
+        therefore merged into the current window so the next update accounts for them -- but ONLY if the episode that
+        produced them is still running.  Otherwise they are discarded (the old episode's batches no longer exist) and
+        counted in ``stats_refused_episode``.  Returns True iff merged.  The caller guarantees single use per update.
+        """
+        if int(episode_id) != self.episode_id:
+            self.stats_refused_episode += 1
+            return False
+        if any(k in stats and not math.isfinite(float(stats[k])) for k in self.WINDOW_KEYS):
+            self.stats_refused_nonfinite = getattr(self, "stats_refused_nonfinite", 0) + 1     # never poison the running window
+            return False
+        for k in self.WINDOW_KEYS:
+            if k in stats:
+                self.win[k][i] += float(stats[k])
+        self.stats_returned += 1
+        return True
 
     # ------------------------------------------------------------------ accounting
     def accounting(self) -> dict:

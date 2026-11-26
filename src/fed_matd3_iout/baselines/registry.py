@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import copy
 
-from ..utils.config import set_by_path
+from ..utils.config import set_by_path, validate_config
 
 NOFED = {"federated.enabled": False}
 
@@ -69,6 +69,7 @@ def build_cfg(base_cfg, method: str | None = None, overrides: dict | None = None
     ov.update(overrides or {})
     for k, v in ov.items():
         set_by_path(cfg, k, v)
+    validate_config(cfg)
     return cfg
 
 

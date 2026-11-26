@@ -36,7 +36,7 @@ def test_full_pipeline_federated(smoke_cfg):
             assert (c, u) in recv and recv[(c, u)] <= rec["t"]
     assert all(c.base_version <= t.server.version for c in t.clients)
     # every received update is exactly one of: aggregated, rejected, or still buffered
-    assert t.server.n_received == t.server.n_accepted + t.server.n_rejected + len(t.server.buffer)
+    assert t.server.n_received == t.server.n_accepted + t.server.n_rejected + t.server.n_expired + len(t.server.buffer)
     rows = evaluate(cfg, t.global_policies(), 2) + evaluate(cfg, t.local_policies(), 2)
     assert all(r["mass_balance_err"] < 1e-6 for r in rows)
     # evaluation scenarios are matched: two independent evaluations of the same policy are identical

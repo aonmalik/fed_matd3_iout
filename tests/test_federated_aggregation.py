@@ -4,7 +4,7 @@ import torch
 from fed_matd3_iout.federated.aggregation import aggregate, l2_clip, normalise_with_cap, raw_weights
 from fed_matd3_iout.federated.federated_client import FederatedClient
 from fed_matd3_iout.federated.relevance import relevance, rho_sem, rho_svc
-from fed_matd3_iout.federated.update_packet import UpdatePacket
+from fed_matd3_iout.federated.update_packet import UpdatePacket, UpdateStatus
 from fed_matd3_iout.federated.usv_server import USVServer
 from fed_matd3_iout.agents.actor import flatten_params
 from fed_matd3_iout.agents.matd3_agent import MATD3Agent
@@ -15,7 +15,9 @@ P = 12
 
 def pkt(cid, base, delta, n=100.0, stats=None, uid=1):
     d = torch.as_tensor(delta, dtype=torch.float32)
-    return UpdatePacket(cid, uid, base, d, d.clone(), n, 10, 10, float(d.norm()), stats or {})
+    p = UpdatePacket(cid, uid, base, d, d.clone(), n, 10, 10, float(d.norm()), stats or {})
+    p.status = UpdateStatus.IN_FLIGHT          # the server only ever receives updates whose last bit has left the AUV
+    return p
 
 
 def srv(cfg, **kw):
@@ -79,7 +81,7 @@ def test_stale_update_rejected(cfg):
     s = srv(cfg, agg_buffer_size=1, max_staleness=2)
     s.version = 10
     assert not s.receive(pkt(0, 7, np.ones(P)), 1.0) and s.n_rejected == 1 and s.buffer == []
-    assert s.receive(pkt(0, 8, np.ones(P)), 1.0)                                  # staleness 2 accepted
+    assert s.receive(pkt(0, 8, np.ones(P), uid=2), 1.0)                                  # staleness 2 accepted
 
 
 def test_shape_mismatch_rejected(cfg):
@@ -99,8 +101,8 @@ def test_stale_at_aggregation_is_dropped(cfg):
 
 def test_semantic_service_weights_are_logged_and_not_fedavg(cfg):
     s = srv(cfg, aggregation="s3a", agg_buffer_size=2, clip_norm=None, max_client_weight=1.0)
-    good = dict(U_del=90.0, V_coll=100.0, coll_mbit=9.0, owned_loss_mbit=1.0)
-    bad = dict(U_del=10.0, V_coll=100.0, coll_mbit=1.0, owned_loss_mbit=9.0)
+    good = dict(U_mature=90.0, V_mature=100.0, coll_mbit=9.0, owned_loss_mbit=1.0)
+    bad = dict(U_mature=10.0, V_mature=100.0, coll_mbit=1.0, owned_loss_mbit=9.0)
     s.receive(pkt(0, 0, np.ones(P), 100, good), 1.0); s.receive(pkt(1, 0, -np.ones(P), 100, bad), 1.0)
     rec = s.maybe_aggregate(1.0)
     assert rec["w"][0] > rec["w"][1] and sum(rec["w"]) == pytest.approx(1.0)       # same n_i, different relevance
@@ -115,8 +117,8 @@ def test_aggregation_deterministic(cfg):
     for _ in range(2):
         s = srv(cfg, aggregation="s3a", agg_buffer_size=2)
         r = np.random.default_rng(0)
-        s.receive(pkt(0, 0, r.normal(size=P), 80, dict(U_del=5., V_coll=10., coll_mbit=1., owned_loss_mbit=1.)), 1.0)
-        s.receive(pkt(1, 0, r.normal(size=P), 120, dict(U_del=2., V_coll=10., coll_mbit=2., owned_loss_mbit=1.)), 1.0)
+        s.receive(pkt(0, 0, r.normal(size=P), 80, dict(U_mature=5., V_mature=10., coll_mbit=1., owned_loss_mbit=1.)), 1.0)
+        s.receive(pkt(1, 0, r.normal(size=P), 120, dict(U_mature=2., V_mature=10., coll_mbit=2., owned_loss_mbit=1.)), 1.0)
         s.maybe_aggregate(1.0); outs.append(s.theta.clone())
     assert torch.equal(outs[0], outs[1])
 
@@ -128,11 +130,13 @@ def test_clipping_applied_in_server(cfg):
 
 
 def test_relevance_measures():
-    st = dict(U_del=50, V_coll=100, coll_mbit=3, owned_loss_mbit=1, units_del=40, units_coll=80)
+    st = dict(U_mature=50, V_mature=100, coll_mbit=3, owned_loss_mbit=1, units_del_mature=40, units_coll_mature=80)
     assert rho_sem(st) == pytest.approx(0.5) and rho_svc(st) == pytest.approx(0.75)
     assert relevance(st, "s3a", 0.5) == pytest.approx(0.625) and relevance(st, "fedavg", 0.5) == 1.0
     assert rho_sem(st, use_semantics=False) == pytest.approx(0.5)
-    assert rho_sem(dict(U_del=500, V_coll=100)) == 1.0 and rho_sem({}) == 0.0 and rho_svc({}) == 0.0
+    with pytest.raises(ValueError):                                                 # no clipping: inconsistent ledger is an error
+        rho_sem(dict(U_mature=500, V_mature=100))
+    assert rho_sem({}) is None and rho_svc({}) is None                              # no evidence => undefined, not zero
     assert 0 <= relevance(st, "s3a", 0.3) <= 1
 
 
@@ -145,7 +149,7 @@ def test_client_update_construction_and_versions(cfg):
     with torch.no_grad():
         for p in ag.actor.parameters(): p.add_(0.1)
     c.steps_since, c.trans_since = 100, 600
-    u = c.make_update(3.0, {"U_del": 1.0})
+    u = c.make_update(3.0, {"U_mature": 1.0})
     assert torch.allclose(u.delta, flatten_params(ag.actor) - base, atol=1e-6)        # Delta = theta_local - theta_base
     assert u.base_version == 0 and u.n_samples == 100 * 16 and u.update_id == 1 and u.norm == pytest.approx(float(u.delta.norm()))
     assert u.size_bytes == u.delta.numel() * cfg.federated.model_bytes_per_param

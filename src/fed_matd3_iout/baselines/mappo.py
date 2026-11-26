@@ -1,12 +1,28 @@
 """MAPPO baseline (genuine on-policy PPO, NOT MATD3-derived).
 
-Shared-parameter Gaussian actor pi(a|o) (tanh mean, state-independent log-std), centralised value V(s, onehot(i)),
+Shared-parameter TANH-SQUASHED Gaussian actor (Protocol 2.2): latent u ~ N(mu(o), sigma^2) (state-independent log-std),
+executed action a = tanh(u) in (-1, 1).  The PPO likelihood is the likelihood of the EXECUTED action:
+    log pi(a|o) = log N(u; mu, sigma) - sum_d log(1 - tanh(u_d)^2)        (change of variables; Jacobian of tanh)
+evaluated with the numerically stable identity  log(1 - tanh(u)^2) = 2 (log 2 - u - softplus(-2u)).
+The rollout buffer stores the LATENT u (not the possibly saturated a), so the log-probability can be recomputed exactly in
+every PPO epoch.  (Protocol 2.1 sampled an unbounded Gaussian, stored its log-prob, and executed clip(a, -1, 1): the stored
+likelihood described a different action than the one executed whenever clipping happened.)
+Entropy bonus (Protocol 2.2, ``matd3.ppo.entropy``):
+  'squashed' (default): entropy of the EXECUTED tanh-squashed policy.  For a = tanh(u):  H(a) = H(u) + E_u[ sum_d log(1 - tanh(u_d)^2) ].
+      H(u) is the closed-form Gaussian entropy; the expectation has no closed form and is estimated with ONE reparameterised
+      sample u' = mu + sigma*eps per state (unbiased, differentiable in mu and log_std).  H(a) <= H(u) always, and the Jacobian
+      term penalises saturation near +-1.
+  'latent': Protocol 2.1/2.2-early behaviour -- entropy of the latent Gaussian only (a regulariser on the latent spread, NOT the
+      entropy of the executed policy).  Kept selectable so the earlier objective stays reproducible.
+Changing this term changes the learning objective of the MAPPO baseline (see PROTOCOL_2.2_CHANGELOG.md).
+Centralised value V(s, onehot(i)),
 GAE(gamma, lambda), clipped surrogate, entropy bonus.  Same environment, reward and experience budget
 (train_episodes x episode_steps) as the off-policy methods.  Not mathematically comparable in sample efficiency:
 on-policy data is used for `epochs` passes and then discarded; there is no replay and no federation.
 """
 from __future__ import annotations
 
+import math
 import time
 from pathlib import Path
 
@@ -16,21 +32,52 @@ import torch.nn as nn
 
 from ..environment.multi_auv_iout_env import MultiAUVIoUTEnv
 from ..training.checkpoint import save_checkpoint
+from ..utils.compute_energy import ComputeMeter
 from ..utils.logger import RunLogger
 from ..utils.seed import make_rng, seed_everything
 
 NAME = "mappo"
 
 
+LOG_RATIO_CLAMP = 20.0       # numerical safeguard only: exp(+-20) is finite in float32; never active for sane ratios
+
+
+def tanh_log_det(u):
+    """log |d tanh(u)/du| = log(1 - tanh(u)^2), stable for any |u| (no epsilon, no clipping)."""
+    return 2.0 * (math.log(2.0) - u - torch.nn.functional.softplus(-2.0 * u))
+
+
 class GaussianActor(nn.Module):
+    """Tanh-squashed Gaussian policy.  ``mu`` outputs the LATENT mean (linear head); actions are tanh(latent)."""
+
     def __init__(self, obs_dim, act_dim, hidden, init_log_std):
         super().__init__()
         self.mu = nn.Sequential(nn.Linear(obs_dim, hidden), nn.Tanh(), nn.Linear(hidden, hidden), nn.Tanh(),
-                                nn.Linear(hidden, act_dim), nn.Tanh())
+                                nn.Linear(hidden, act_dim))
         self.log_std = nn.Parameter(torch.full((act_dim,), float(init_log_std)))
 
     def dist(self, o):
+        """Distribution of the LATENT variable u."""
         return torch.distributions.Normal(self.mu(o), self.log_std.exp().expand(o.shape[0], -1))
+
+    def log_prob_latent(self, o, u):
+        """log pi(tanh(u)|o) = log N(u) - sum log(1 - tanh(u)^2); shape (N,)."""
+        return (self.dist(o).log_prob(u) - tanh_log_det(u)).sum(-1)
+
+    def sample(self, o):
+        """Returns (action in [-1,1], latent u, log pi(action|o))."""
+        d = self.dist(o)
+        u = d.sample()
+        return torch.tanh(u), u, (d.log_prob(u) - tanh_log_det(u)).sum(-1)
+
+    def mean_action(self, o):
+        return torch.tanh(self.mu(o))
+
+    def squashed_entropy(self, o):
+        """Unbiased reparameterised estimate of H(tanh(u)) per state: H(u) + sum_d log(1 - tanh(u'_d)^2), u' ~ pi(.|o).  Shape (N,)."""
+        d = self.dist(o)
+        u = d.rsample()
+        return d.entropy().sum(-1) + tanh_log_det(u).sum(-1)
 
 
 class ValueNet(nn.Module):
@@ -49,6 +96,10 @@ class MAPPOTrainer:
         self.env = MultiAUVIoUTEnv(cfg)
         e, p, h = self.env, cfg["matd3"]["ppo"], int(cfg["matd3"]["hidden"])
         self.p = p
+        self.entropy_mode = str(p.get("entropy", "squashed"))
+        if self.entropy_mode not in ("squashed", "latent"):
+            raise ValueError(f"matd3.ppo.entropy must be 'squashed' or 'latent', got {self.entropy_mode!r}")
+        self.meter = ComputeMeter()
         self.actor = GaussianActor(e.obs_dim, e.act_dim, h, p["init_log_std"]).to(device)
         self.value = ValueNet(e.state_dim + e.M, h).to(device)
         self.opt = torch.optim.Adam(list(self.actor.parameters()) + list(self.value.parameters()), lr=float(p["lr"]))
@@ -68,7 +119,7 @@ class MAPPOTrainer:
         S = torch.as_tensor(np.array(buf["s"]), device=self.device)
         S2 = torch.as_tensor(np.array(buf["s2"]), device=self.device)
         O = torch.as_tensor(np.array(buf["o"]), device=self.device)
-        A = torch.as_tensor(np.array(buf["a"]), device=self.device)
+        A = torch.as_tensor(np.array(buf["u"]), device=self.device)          # LATENT samples (see module docstring)
         LP = torch.as_tensor(np.array(buf["lp"]), device=self.device)
         R = torch.as_tensor(np.array(buf["r"]), device=self.device)
         last = torch.as_tensor(np.array(buf["last"]), device=self.device, dtype=torch.float32)
@@ -88,12 +139,13 @@ class MAPPOTrainer:
             idx = torch.randperm(T, device=self.device)
             for mb in idx.split(max(T // 4, 1)):
                 d = self.actor.dist(O[mb].reshape(-1, O.shape[-1]))
-                lp = d.log_prob(A[mb].reshape(-1, A.shape[-1])).sum(-1).reshape(len(mb), M)
-                ratio = (lp - LP[mb]).exp()
+                lp = self.actor.log_prob_latent(O[mb].reshape(-1, O.shape[-1]), A[mb].reshape(-1, A.shape[-1])).reshape(len(mb), M)
+                ratio = (lp - LP[mb]).clamp(-LOG_RATIO_CLAMP, LOG_RATIO_CLAMP).exp()
                 c = float(self.p["clip"])
                 pl = -torch.min(ratio * advn[mb], ratio.clamp(1 - c, 1 + c) * advn[mb]).mean()
                 vl = ((self._v(S[mb]) - ret[mb]) ** 2).mean()
-                ent = d.entropy().sum(-1).mean()
+                ent = (self.actor.squashed_entropy(O[mb].reshape(-1, O.shape[-1])) if self.entropy_mode == "squashed"
+                       else d.entropy().sum(-1)).mean()
                 loss = pl + 0.5 * vl - float(self.p["entropy_coef"]) * ent
                 self.opt.zero_grad(set_to_none=True)
                 loss.backward()
@@ -102,26 +154,29 @@ class MAPPOTrainer:
                 info = {"policy_loss": float(pl.detach()), "value_loss": float(vl.detach())}
         return info
 
+    def compute_report(self) -> dict:
+        """Training compute time / energy of the PPO updates (D9): energy is measured or ``not_measured`` -- never a substituted 0."""
+        return self.meter.report()
+
     def train(self, n_episodes=None, eval_fn=None, eval_every=0, ckpt_every=0):
         cfg, env = self.cfg, self.env
         n_ep = int(n_episodes or cfg["experiment"]["train_episodes"])
-        buf = {k: [] for k in ("s", "s2", "o", "a", "lp", "r", "last")}
+        buf = {k: [] for k in ("s", "s2", "o", "a", "u", "lp", "r", "last")}
         for ep in range(n_ep):
             obs, info = env.reset(self.seed * 10_000 + ep)
             state, ret = info["state"], np.zeros(env.M)
             for k in range(env.T):
                 with torch.no_grad():
-                    d = self.actor.dist(torch.as_tensor(obs, device=self.device))
-                    a = d.sample()
-                    lp = d.log_prob(a).sum(-1)
-                obs2, r, _, trunc, info = env.step(np.clip(a.cpu().numpy(), -1, 1))
-                for key, val in (("s", state), ("s2", info["state"]), ("o", obs), ("a", a.cpu().numpy()),
+                    a, u, lp = self.actor.sample(torch.as_tensor(obs, device=self.device))
+                obs2, r, _, trunc, info = env.step(a.cpu().numpy())          # tanh output: already in [-1, 1], NOT clipped
+                for key, val in (("s", state), ("s2", info["state"]), ("o", obs), ("a", a.cpu().numpy()), ("u", u.cpu().numpy()),
                                  ("lp", lp.cpu().numpy()), ("r", r), ("last", float(trunc or k == env.T - 1))):
                     buf[key].append(val)
                 ret += r
                 obs, state = obs2, info["state"]
                 if len(buf["s"]) >= int(self.p["rollout_steps"]):
-                    self._update(buf)
+                    with self.meter:
+                        self._update(buf)
                     buf = {k_: [] for k_ in buf}
                 if trunc:
                     break
@@ -139,7 +194,7 @@ class MAPPOTrainer:
     def local_policies(self):
         def pol(o):
             with torch.no_grad():
-                return self.actor.mu(torch.as_tensor(o, dtype=torch.float32, device=self.device).unsqueeze(0))[0].cpu().numpy()
+                return self.actor.mean_action(torch.as_tensor(o, dtype=torch.float32, device=self.device).unsqueeze(0))[0].cpu().numpy()
         return [pol for _ in range(self.env.M)]
 
     global_policies = local_policies

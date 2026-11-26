@@ -1,0 +1,8 @@
+semantic:
+  use_in_decisions: true     # false => decisions (reward/allocator/relevance) ignore semantics; evaluation still measures it
+  categories:                # criticality category -> parameters
+    critical: {prob: 0.3, sigma_factor: 1.0, c_priority: 2.5, mu: 0.05}   # SAC-TD3: p_c=0.3, gamma_crit=2.5, mu_crit=0.05 /s
+    high:     {prob: 0.4, sigma_factor: 1.0, c_priority: 1.0, mu: 0.01}   # p_h=0.4 from SAC-TD3; its mu is NOT given in the paper -> ASSUMPTION (= routine)
+    routine:  {prob: 0.3, sigma_factor: 0.5, c_priority: 1.0, mu: 0.01}   # gamma_low=0.5, mu_routine=0.01 /s
+  hotspot_weights: [0.3, 0.6, 1.0]   # omega_L, omega_M, omega_H (SAC-TD3). SIMPLIFICATION: static per sensor; SAC-TD3 evolves omega_m(t) by a 3-state Markov chain (not reproduced)
+  # sigma = omega_sensor * sigma_factor(category) in [0,1];  criticality enters ONLY through c_priority.

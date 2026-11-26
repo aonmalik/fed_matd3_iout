@@ -1,0 +1,26 @@
+{
+  "schema": "fed_matd3_iout.validation_selfcheck/1",
+  "committed_report": "final_validation_report.json",
+  "committed_report_sha256": "7901bb292311a316ccbc580cfe83775ec04fe0ceea7a18df298192f0d28a1cdb",
+  "source_commit_validated_by_report": "5b95946b6396352a815d37e36bc754feeaf96b10",
+  "commit_checked_by_self_check": "9fdb2a8b47edd124b467ae9b5070a5c5b93debf7",
+  "source_tree_hash_at_check": "d02d6321b92ad551",
+  "self_check": {
+    "executed_separately": true,
+    "command": "python -m pytest -q tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit tests/test_final_validation_report.py::test_committed_report_has_unambiguous_schema3_sections_and_matches_tree",
+    "exit_code": 0,
+    "passed": true,
+    "commit_checked": "9fdb2a8b47edd124b467ae9b5070a5c5b93debf7"
+  },
+  "overall": {
+    "main_suite_completed": true,
+    "main_suite_passed": true,
+    "any_test_deselected": true,
+    "self_check_executed_separately": true,
+    "self_check_passed": true,
+    "report_matches_committed_source_and_config": true,
+    "validation_interrupted": false,
+    "all_required_checks_completed": true,
+    "meaning": "all_required_checks_completed is true only when the main suite passed, the deselected self-check was run separately and passed on the committed report, the report matches the source/config, and nothing was interrupted."
+  }
+}

@@ -155,9 +155,18 @@ eq("F3", "Staleness factor", "w_stale = exp(-kappa Delta)", "down-weighting of s
    T + "test_staleness.py::test_staleness_definition_and_factor", "federated.kappa", "Functional form unvalidated.")
 eq("F3b", "Max-staleness gate", "accept iff 0 <= Delta <= Delta_max", "reject over-stale updates", "rounds", "", "C", "new", M + "federated/staleness.py:is_acceptable",
    T + "test_staleness.py::test_max_staleness_gate", "federated.max_staleness", "")
-eq("F4", "Semantic-service relevance", "M = beta rho_sem + (1-beta) rho_svc;  rho_sem = clip(U_del/V_coll); rho_svc = C/(C+L_own)", "relevance in [0,1] from MEASURED window statistics",
-   "see relevance.py", "window since last update", "C", "new", M + "federated/relevance.py:relevance", T + "test_federated_aggregation.py::test_relevance_measures", "federated.beta_sem",
-   "Delivered and collected are windowed separately -> rho_sem may exceed 1 (clipped). Own-sensor overflow depends on allocation, not only on the AUV's policy.")
+eq("F4", "Semantic-service relevance", "M = beta rho_sem + (1-beta) rho_svc;  rho_sem = U_mature/V_mature over the MATURE batches S_i of AUV i;  rho_svc = C/(C+L_own)", "relevance in [0,1] from MEASURED, batch-attributed statistics",
+   "see relevance.py / semantic/attribution.py", "mature = fully delivered or older than ln(1/eps)/mu", "C", "new", M + "federated/relevance.py:relevance", T + "test_relevance_attribution.py::test_relevance_bounded_and_meaningful", "federated.beta_sem, federated.maturity_eps",
+   "CHANGED (audit): numerator and denominator now describe the SAME batches, so no clipping is needed (bounded by construction; inconsistency raises). Undefined components (no mature batch / no sensor events) are dropped, not scored 0. Maturity horizon is a modelling choice. Own-sensor overflow depends on allocation, not only on the AUV's policy.")
+eq("F13", "Batch-level attribution ledger", "key (pkt_id, t_collect) per AUV; V += units c sigma at collection; U += delivered utility at delivery; claim once when mature; censor at episode end", "delivered utility is credited to the batch and the AUV that collected it, across windows",
+   "H = ln(1/eps)/mu", "AUVs upload only their own data (no hand-off)", "C", "new", M + "semantic/attribution.py:BatchBook", T + "test_relevance_attribution.py::test_batch_collected_in_one_window_delivered_in_another",
+   "federated.maturity_eps", "Late delivery after claim-by-age is counted in late_units, not re-attributed (<= eps of the batch value). Batches of mu=0 mature only by full delivery.")
+eq("F14", "Update lifecycle", "created -> uploading -> in_flight -> buffered -> aggregated | rejected | expired; one outstanding update per client; only a 'commit' control message advances the reference", "transport receipt != aggregation commit",
+   "-", "server is authoritative from in_flight on; terminal states have no outgoing transition", "A", "audit repair", M + "federated/update_packet.py:UpdatePacket.transition", T + "test_update_lifecycle.py::test_successful_aggregation_advances_reference_exactly_once",
+   "federated.max_buffer_age_s, federated.upload_timeout_s", "Client cannot withdraw an update once its last bit has left (no client-side expiry after in_flight).")
+eq("F15", "Window-statistics settlement", "AGGREGATED -> consumed; REJECTED/EXPIRED -> returned to the window if same episode else discarded; settled exactly once per update", "no loss and no double counting of update-owned statistics",
+   "-", "episode_id stamped on every update", "A", "audit repair", M + "federated/communication_protocol.py:FederatedProtocol._settle", T + "test_stats_accounting.py::test_old_episode_stats_cannot_contaminate_next_episode",
+   "-", "Statistics returned after a rejection are re-reported by the NEXT update (their model progress is also still in its delta).")
 eq("F5", "Aggregation weight", "Z_i = n_i^alpha exp(-kappa Delta_i) [eps_M + (1-eps_M) M_i]^eta", "NOT unbiased FedAvg; link reliability NOT multiplied in", "n_i = grad steps x batch size",
    "weights change the effective objective", "C", "new", M + "federated/aggregation.py:raw_weights", T + "test_federated_aggregation.py::test_weight_formula_and_normalisation",
    "federated.alpha, eta, eps_m", "No convergence guarantee; no privacy guarantee.")
@@ -174,7 +183,7 @@ eq("F10", "Transfer feasibility", "progress += R*share*dt only when contact up a
    "federated.allow_fragmentation, acoustic.usv_link.model_share", "")
 eq("F11", "Contact scheduler", "start iff link up (and, without fragmentation, airtime <= expected remaining window)", "defer/start decision", "-", "EWMA window estimate", "C", "new",
    M + "communication/contact_scheduler.py:ContactScheduler.may_start", T + "test_contact_scheduler.py::test_defers_when_update_does_not_fit_window", "federated.allow_fragmentation", "")
-eq("F12", "No aggregation before receipt", "buffer only filled by USVServer.receive() after last bit arrives", "causality", "-", "", "A", "spec rule 9",
+eq("F12", "No aggregation before receipt", "buffer only filled by USVServer.receive() after last bit arrives; duplicate update ids are ignored", "causality + exactly-once", "-", "", "A", "spec rule 9",
    M + "federated/usv_server.py:USVServer.receive", T + "test_federated_aggregation.py::test_no_aggregation_before_receipt", "", "")
 # ------------------------------------------------------------------ reward
 eq("R1", "Team + local reward", "r_i = (1-zeta) r_team + zeta r_local + w_sh F;  r_team = w_u dU/U_ref - w_l L/L_ref - w_e E/E_ref - w_c C_coll - w_o C_bound",

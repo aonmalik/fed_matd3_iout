@@ -29,5 +29,6 @@ acoustic:
     range_m: 110.0             # contact range (3-D slant)
     outage_p_drop: 0.01        # Gilbert-Elliott: P(up -> down) per step
     outage_p_recover: 0.10     # P(down -> up) per step
-    model_share: 0.5           # fraction of link capacity given to model traffic when a transfer is active
+    model_share: 0.5           # POOL: fraction of one AUV's link airtime given to ALL model traffic (upload+control+download) when any is active (2.2)
+    duplex: half               # half: sensor data and model traffic (both directions) share one airtime budget; full: uplink and downlink budgets are separate (2.2, author decision D7)
   rx_power_w: 0.5              # AUV receive power (W)  ASSUMPTION

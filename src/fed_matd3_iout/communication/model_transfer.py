@@ -1,4 +1,8 @@
-"""A single model transfer (upload of a local update or download of the global actor).
+"""A single model transfer (upload of a local update, control messages, or download of the global actor).
+
+``share`` is the fraction of the step's airtime granted to THIS transfer by the per-AUV arbiter
+(communication/capacity_arbiter.py); bytes moved = full link rate * dt * share, airtime used = share * dt (time division),
+so the airtime/energy charged equals what was actually granted and what was actually used.
 
 Progress accrues only in steps where the contact window is open AND the fading draw succeeds. A failed
 (fading) step transfers nothing (packet loss) and is counted. With fragmentation disabled, losing the contact
@@ -40,19 +44,26 @@ class ModelTransfer:
         if not link.success:
             self.failures += 1
             return 0.0
-        rate_Bps = link.rate_mbps * 1e6 / 8.0 * share
-        if rate_Bps <= 0:
-            return 0.0
+        rate_full = link.rate_mbps * 1e6 / 8.0                 # bytes/s at the full link rate
         need = self.total_bytes - self.progress_bytes
-        can = rate_Bps * dt
-        if can >= need:
-            used = need / rate_Bps
+        if need <= 1e-9 * max(self.total_bytes, 1.0):          # rounding left nothing to send: the last bit is already out
             self.progress_bytes = self.total_bytes
             self.done_tx = True
-            self.t_tx_done = t + used
+            self.t_tx_done = t
+            self.t_arrival = t + link.prop_delay_s
+            return 0.0
+        if rate_full <= 0 or share <= 0:
+            return 0.0
+        can = rate_full * dt * share                           # bytes movable in the granted slot
+        if can >= need:
+            self.progress_bytes = self.total_bytes
+            self.done_tx = True
+            self.t_tx_done = t + need / (rate_full * share)    # completion time inside the step (same convention as 2.1)
             self.t_arrival = self.t_tx_done + link.prop_delay_s
+            used = need / rate_full                            # airtime actually on the air
             self.tx_time_s += used
             return used
         self.progress_bytes += can
-        self.tx_time_s += dt
-        return dt
+        used = dt * share
+        self.tx_time_s += used
+        return used

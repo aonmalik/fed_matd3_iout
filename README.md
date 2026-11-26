@@ -5,6 +5,11 @@ Semantic- and Service-Aware **Federated MATD3** for cooperative multi-AUV data c
 > **Status: research code, no validated results yet.** Tests and a smoke test pass; publication-scale experiments have **not** been run, and a short pilot did not yet show learning
 > (see `docs/ASSUMPTIONS_AND_LIMITATIONS.md`). Do not cite any performance claim from this repository until you have run the full protocol.
 
+> **Protocol 2.2 (CANDIDATE, pilot-stage).** Protocol 2.1 is frozen in `configs/protocols/v2.1/` and 2.2 results are NOT comparable with 2.1 results. This is a single-USV
+> project, not a reproduction of the Paper 2 two-USV setup. Decisions D1-D6 are open; D7-D10 are provisional proposals, not approved
+> (`docs/PROTOCOL_2.2_DECISION_LOG.md`). Software checks (tests, smoke test, validators) are verification of the implementation, not scientific evidence; compute energy is
+> `not_measured`, so no total-energy or energy-efficiency claim is supported. See `docs/PROTOCOL_2.2_CORRECTION_REPORT.md` and `docs/PROTOCOL_2.2_REMAINING_ISSUES.md`.
+
 ## Research objective
 Can semantic- and service-aware asynchronous federated MATD3 improve delivered semantic utility, collection efficiency and robustness of multi-AUV IoUT data collection under
 intermittent links, compared with conventional MATD3 and conventional federated learning? (Hypothesis under test, not a finding.)
@@ -34,7 +39,10 @@ All settings live in `configs/*.yaml` (environment, acoustic channel, semantic m
 ```bash
 python -m pytest tests                                                   # unit + integration tests
 python scripts/run_smoke_test.py                                         # 3 AUV / 1 USV / 10 sensors, 3 episodes x 20 steps, CPU
-python scripts/validate_manifest.py                                      # manifest / one-USV rule / ablation consistency
+python scripts/validate_manifest.py                                      # manifest / one-USV rule / ablation consistency; exits 1 on mismatch
+python scripts/final_validation.py --run-tests --probe-episodes 3  # implementation checks + FULL test suite -> docs/final_validation_report.json
+python scripts/aggregation_diagnostics.py --episodes 6            # relevance / weight diagnostics (short probe)
+python scripts/run_pilot_2seeds.py                                # PILOT plan + cost (dry run); add --approved only after author approval
 python scripts/train_centralized.py --method centralized_matd3 --seeds 0 # standard CTDE MATD3 (no federation)
 python scripts/train_federated.py  --method fedavg_matd3       --seeds 0 # conventional federated weights
 python scripts/train_federated.py  --method s3a_fedmatd3       --seeds 0 # proposed
@@ -55,10 +63,18 @@ Comparability caveats: `docs/EXPERIMENT_PROTOCOL.md`. A goal-seeking reference c
 full; no_semantic_utility; no_service_arrival_prediction; no_service_aware_aggregation; no_semantic_aware_aggregation; no_staleness_correction; no_async_communication; no_update_clipping;
 no_assignment_continuity; certainty_equivalent_backlog; centralized_actor_training. Each flips only its own config keys.
 
+## Federated update lifecycle (audit-corrected)
+`created -> uploading -> in_flight -> buffered -> aggregated | rejected | expired`, one outstanding update per client for its whole life.
+The USV is authoritative from `in_flight` on and answers with downlink control messages: a **receipt** (transport ACK, informational) and a final
+**commit / reject / expire**. Only `commit` advances the client's reference model; reject/expire change neither the reference nor the counters.
+Each update owns the window statistics it was created with; they are settled exactly once (consumed if aggregated; returned to the window if
+rejected/expired in the same episode; discarded if the episode has ended). `rho_sem` is attributed per collected batch (`semantic/attribution.py`).
+Details: `docs/ASSUMPTIONS_AND_LIMITATIONS.md`, equations F4, F12-F15 in `docs/EQUATION_IMPLEMENTATION_MAP.md`.
+
 ## Metrics
 Defined with explicit denominators in `evaluation/metrics.py` (collection/delivery ratios, U_total, U_norm, U_per_packet, critical PDR, age, VoI retention, energy components, energy per Mbit
 and per utility, travel, unsafe events, boundary violations, workload imbalance, mass-balance error) and federated metrics from `FederatedProtocol.summary()` (rounds, accepted/rejected,
-staleness, bytes, energy, latency, link-up fraction). Statistics: `evaluation/statistical_tests.py`.
+staleness, bytes, energy, latency, link-up fraction; created/transmitted/received/aggregated/rejected/expired update counts). **Changed definitions after the audit:** `failed_updates` = rejected + expired (was rejected + upload timeouts); `attempted_updates` = created; `accepted_updates` = aggregated (unchanged meaning); the relevance score uses batch-attributed *mature* ratios (see limitations doc). Statistics: `evaluation/statistical_tests.py`.
 
 ## Reproducibility and outputs
 See `docs/REPRODUCIBILITY.md`. Each run writes `run_manifest.json`, `train.jsonl`, checkpoints, aggregation/communication histories and `evaluation.json` into a new `results/` folder; nothing is overwritten.

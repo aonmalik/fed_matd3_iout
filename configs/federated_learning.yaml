@@ -20,6 +20,22 @@ federated:
   model_bytes_per_param: 4
   ack_bytes: 64
   upload_timeout_s: 400.0
+  # Finite-horizon termination (Protocol 2.2).  0 => the global model is evaluated EXACTLY at the training cutoff (the 2.1 behaviour, which is frozen in configs/protocols/v2.1;
+  # every update still pending is reported, none is forced).  > 0 => a bounded communication DRAIN of at most this many seconds is run
+  # after the last training episode: no new local updates are created or trained, no new replay data is stored, only already-created
+  # transfers/aggregations may resolve.  Choice of value is an author decision (docs/AUTHOR_DECISIONS.md D8).
+  final_drain_s: 600.0     # PROVISIONAL pilot setting (D8). = max_buffer_age_s; >= derived SERVER-side bound 521.1 s (upload_timeout_s 400 + max propagation 0.073 + agg_timeout_s 120 + 1 step). The client-notification leg (downlink contact) has NO deterministic bound, so a drain may end with unresolved updates; they are reported, never forced. Needs sensitivity analysis.
+  max_buffer_age_s: 600.0   # a BUFFERED update older than this at the USV is EXPIRED (must exceed agg/sync timeouts)
+  maturity_eps: 0.05        # a collected batch is 'mature' once its remaining VoI <= eps (rho_sem attribution)
   allow_fragmentation: true   # false => transfer restarts if the link drops
   client_speed: [1.0]         # relative gradient-step rate per AUV (cycled); <1 => straggler
   local_reward_weight: 0.3    # zeta: r_i = (1-zeta) r_team + zeta r_local
+  # ---- protocol 2.1: bounded retry/back-off after a REJECTED/EXPIRED update (deterministic, no jitter).
+  # delay after the k-th consecutive failure = min(max_s, base_s * factor^(k-1)); reset by a commit or by installing a newer global model.
+  # Parameters are anchored a priori to the protocol time scales (NOT tuned on performance): base_s = agg_timeout_s (the server state that
+  # caused a rejection can only change at an aggregation round), max_s = 4 * agg_timeout_s (< max_buffer_age_s).  Absent/null => protocol 2.0.
+  retry:
+    enabled: true
+    base_s: 120.0
+    factor: 2.0
+    max_s: 480.0

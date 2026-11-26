@@ -54,7 +54,10 @@ Generated from `scripts/equation_registry.py`; `tests/test_equation_registry.py`
 | F2 | A | `src/fed_matd3_iout/federated/staleness.py:staleness` | `tests/test_staleness.py::test_staleness_definition_and_factor` | - |
 | F3 | C | `src/fed_matd3_iout/federated/staleness.py:staleness_factor` | `tests/test_staleness.py::test_staleness_definition_and_factor` | federated.kappa |
 | F3b | C | `src/fed_matd3_iout/federated/staleness.py:is_acceptable` | `tests/test_staleness.py::test_max_staleness_gate` | federated.max_staleness |
-| F4 | C | `src/fed_matd3_iout/federated/relevance.py:relevance` | `tests/test_federated_aggregation.py::test_relevance_measures` | federated.beta_sem |
+| F4 | C | `src/fed_matd3_iout/federated/relevance.py:relevance` | `tests/test_relevance_attribution.py::test_relevance_bounded_and_meaningful` | federated.beta_sem, federated.maturity_eps |
+| F13 | C | `src/fed_matd3_iout/semantic/attribution.py:BatchBook` | `tests/test_relevance_attribution.py::test_batch_collected_in_one_window_delivered_in_another` | federated.maturity_eps |
+| F14 | A | `src/fed_matd3_iout/federated/update_packet.py:UpdatePacket.transition` | `tests/test_update_lifecycle.py::test_successful_aggregation_advances_reference_exactly_once` | federated.max_buffer_age_s, federated.upload_timeout_s |
+| F15 | A | `src/fed_matd3_iout/federated/communication_protocol.py:FederatedProtocol._settle` | `tests/test_stats_accounting.py::test_old_episode_stats_cannot_contaminate_next_episode` | - |
 | F5 | C | `src/fed_matd3_iout/federated/aggregation.py:raw_weights` | `tests/test_federated_aggregation.py::test_weight_formula_and_normalisation` | federated.alpha, eta, eps_m |
 | F6 | C | `src/fed_matd3_iout/federated/aggregation.py:normalise_with_cap` | `tests/test_federated_aggregation.py::test_weight_cap_and_renormalisation` | federated.max_client_weight |
 | F7 | A | `src/fed_matd3_iout/federated/aggregation.py:l2_clip` | `tests/test_federated_aggregation.py::test_l2_clip` | federated.clip_norm |

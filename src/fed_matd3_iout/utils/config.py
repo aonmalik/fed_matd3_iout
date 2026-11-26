@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import math
 import json
 import os
 from pathlib import Path
@@ -85,7 +86,52 @@ def load_config(extra_files: Iterable[str] = (), overrides: dict | None = None,
             deep_update(cfg, yaml.safe_load(fh) or {})
     for k, v in (overrides or {}).items():
         set_by_path(cfg, k, v)
-    return _wrap(cfg)
+    wrapped = _wrap(cfg)
+    validate_config(wrapped)
+    return wrapped
+
+
+class ConfigError(ValueError):
+    """Raised when a configuration is internally inconsistent (scientifically invalid)."""
+
+
+def validate_config(cfg) -> None:
+    """Cross-field consistency checks. Only checks keys that are present; raises ConfigError listing ALL violations."""
+    bad: list[str] = []
+    e, a, f = cfg.get("env", {}), cfg.get("allocation", {}), cfg.get("federated", {})
+    if "offload_hi" in e and "offload_lo" in e:
+        hi, lo = float(e["offload_hi"]), float(e["offload_lo"])
+        if not (0.0 <= lo < hi <= 1.0):
+            bad.append(f"env: offload hysteresis requires 0 <= offload_lo < offload_hi <= 1 (got lo={lo}, hi={hi})")
+    if "contact_time_s" in a and "max_hover_steps" in e and "dt_s" in e:
+        horizon = float(e["max_hover_steps"]) * float(e["dt_s"])
+        if float(a["contact_time_s"]) > horizon * (1 + 1e-9):
+            bad.append(f"allocation.contact_time_s={a['contact_time_s']} exceeds max_hover_steps*dt_s={horizon}: the allocator "
+                       "would assume more collectable volume than a visit can deliver")
+    ul = cfg.get("acoustic", {}).get("usv_link", {})
+    if "model_share" in ul:
+        try:
+            ms = float(ul["model_share"])
+        except (TypeError, ValueError):
+            ms = float("nan")
+        if not (math.isfinite(ms) and 0.0 <= ms <= 1.0):          # the pool is a FRACTION of one step's airtime (D7); NaN fails here
+            bad.append(f"acoustic.usv_link.model_share must be finite and within [0, 1] (got {ul['model_share']!r})")
+    if f:
+        if "maturity_eps" in f and not (0.0 < float(f["maturity_eps"]) < 1.0):
+            bad.append("federated.maturity_eps must be in (0, 1)")
+        if "max_buffer_age_s" in f:
+            need = max(float(f.get("agg_timeout_s", 0.0)), float(f.get("sync_timeout_s", 0.0)))
+            if float(f["max_buffer_age_s"]) <= need:
+                bad.append(f"federated.max_buffer_age_s={f['max_buffer_age_s']} must exceed agg/sync timeouts ({need})")
+        if "final_drain_s" in f and float(f["final_drain_s"]) < 0.0:
+            bad.append("federated.final_drain_s must be >= 0")
+        r = f.get("retry")
+        if r is not None and bool(r.get("enabled", True)):
+            b, k, m = float(r.get("base_s", 0.0)), float(r.get("factor", 0.0)), float(r.get("max_s", 0.0))
+            if not (b > 0.0 and k >= 1.0 and m >= b):
+                bad.append(f"federated.retry requires base_s > 0, factor >= 1, max_s >= base_s (got {b}, {k}, {m})")
+    if bad:
+        raise ConfigError("invalid configuration:\n  - " + "\n  - ".join(bad))
 
 
 def config_hash(cfg: dict) -> str:
