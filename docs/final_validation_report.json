@@ -3,17 +3,17 @@
   "protocol_version": "2.2",
   "config_hash": "94e1197a496ab283",
   "provenance": {
-    "commit": "6b589742da9c67ac58dfd6f154b31f150b9a53ae",
-    "branch": "protocol-2.2-candidate",
+    "commit": "2bcb48a100c216a0dc7021e2178dd13f20f166d0",
+    "branch": "protocol-2.2-prepilot-review",
     "working_tree_clean": true,
     "dirty_files": [],
-    "source_tree_hash": "11c0743b9c6d455c",
+    "source_tree_hash": "42c7489558263cc9",
     "note": "commit = HEAD when the report was generated; a report cannot contain the hash of the commit that stores it, so it is committed separately AFTER the code commit it describes; source_tree_hash verifies the code is unchanged."
   },
   "environment": {
-    "python": "3.13.18",
+    "python": "3.13.11",
     "torch": "2.15.0+cu132",
-    "numpy": "2.5.3",
+    "numpy": "2.5.5",
     "scipy": "1.18.1",
     "device": "cpu"
   },
@@ -25,13 +25,13 @@
     "deselected_reason": "this test validates the report that is being generated here (it is run separately against the committed report)",
     "returncode": 0,
     "failures": [],
-    "collected": 466,
-    "passed": 466,
+    "collected": 467,
+    "passed": 467,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "counts_available": true,
-    "wall_s": 135.0
+    "wall_s": 167.8
   },
   "sections": {
     "reproducibility": {
@@ -349,7 +349,7 @@
             "eps": 0.01,
             "horizon_factor_ln_1_over_eps": 4.605170185988092,
             "pooled_rho_sem": 0.11207501533165252,
-            "mean_claim_rho_sem": 0.12118094186918921,
+            "mean_claim_rho_sem": 0.12118094186918922,
             "n_defined_claims": 90,
             "mature_batches": 96652,
             "mature_value_V": 614958.3500000001,
@@ -359,7 +359,7 @@
             "late_units_share_of_mature_units": 0.0016633802972053008,
             "across_auv_pooled_rho_sem": {
               "min": 0.09121771692351557,
-              "max": 0.14078896508898123
+              "max": 0.14078896508898125
             },
             "spearman_vs_reference_eps": 0.9991110013581924
           },
@@ -376,7 +376,7 @@
             "late_units_not_reattributed": 1711.0,
             "late_units_share_of_mature_units": 0.0026904673173477746,
             "across_auv_pooled_rho_sem": {
-              "min": 0.0912177096334484,
+              "min": 0.09121770963344841,
               "max": 0.1407888974907455
             },
             "spearman_vs_reference_eps": 0.9993250195497385
@@ -395,7 +395,7 @@
             "late_units_share_of_mature_units": 0.005417608643019523,
             "across_auv_pooled_rho_sem": {
               "min": 0.09121357260234426,
-              "max": 0.14078689262750863
+              "max": 0.14078689262750865
             },
             "spearman_vs_reference_eps": 1.0
           },
@@ -412,8 +412,8 @@
             "late_units_not_reattributed": 4552.0,
             "late_units_share_of_mature_units": 0.0071507003821980235,
             "across_auv_pooled_rho_sem": {
-              "min": 0.09121357246640087,
-              "max": 0.1407868022221105
+              "min": 0.09121357246640088,
+              "max": 0.14078680222211054
             },
             "spearman_vs_reference_eps": 0.9915051240893936
           },
@@ -430,7 +430,7 @@
             "late_units_not_reattributed": 6717.0,
             "late_units_share_of_mature_units": 0.010511391644406053,
             "across_auv_pooled_rho_sem": {
-              "min": 0.09112229441279567,
+              "min": 0.09112229441279568,
               "max": 0.14077657872678292
             },
             "spearman_vs_reference_eps": 0.97476231633535
@@ -449,7 +449,7 @@
             "late_units_share_of_mature_units": 0.029993261507718284,
             "across_auv_pooled_rho_sem": {
               "min": 0.0874117604060021,
-              "max": 0.13942948360911142
+              "max": 0.13942948360911145
             },
             "spearman_vs_reference_eps": 0.960423097501749
           }
