@@ -1,13 +1,13 @@
 {
-  "schema": "fed_matd3_iout.final_validation/2",
+  "schema": "fed_matd3_iout.final_validation/3",
   "protocol_version": "2.2",
   "config_hash": "94e1197a496ab283",
   "provenance": {
-    "commit": "2bcb48a100c216a0dc7021e2178dd13f20f166d0",
+    "commit": "5b95946b6396352a815d37e36bc754feeaf96b10",
     "branch": "protocol-2.2-prepilot-review",
     "working_tree_clean": true,
     "dirty_files": [],
-    "source_tree_hash": "42c7489558263cc9",
+    "source_tree_hash": "d02d6321b92ad551",
     "note": "commit = HEAD when the report was generated; a report cannot contain the hash of the commit that stores it, so it is committed separately AFTER the code commit it describes; source_tree_hash verifies the code is unchanged."
   },
   "environment": {
@@ -18,20 +18,62 @@
     "device": "cpu"
   },
   "tests": {
-    "command": "python -m pytest -q -p no:warnings -rfE --junitxml=<tmp> --deselect tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit",
+    "main_suite": {
+      "command": "python -m pytest -q -p no:warnings -p no:cacheprovider -rfE --junitxml=<tmp> --deselect tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit --deselect tests/test_final_validation_report.py::test_committed_report_has_unambiguous_schema3_sections_and_matches_tree",
+      "exit_code": 0,
+      "interrupted": false,
+      "counts_available": true,
+      "deselected": [
+        "tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit",
+        "tests/test_final_validation_report.py::test_committed_report_has_unambiguous_schema3_sections_and_matches_tree"
+      ],
+      "deselected_count": 2,
+      "failures": [],
+      "wall_s": 167.2,
+      "total": 491,
+      "executed": 489,
+      "passed": 489,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "counts_consistent": true,
+      "passed_all_executed": true
+    },
+    "committed_report_self_check": {
+      "executed_separately": false,
+      "status": "deferred_to_stage_2",
+      "command": "python -m pytest -q tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit tests/test_final_validation_report.py::test_committed_report_has_unambiguous_schema3_sections_and_matches_tree",
+      "exit_code": null,
+      "passed": null,
+      "commit_checked": null,
+      "record_file": "docs/final_validation_selfcheck.json",
+      "note": "the self-check validates the COMMITTED report, so it can only run after the report is committed (stage 2); its result is stored in the record file, not here, to avoid a report that must contain the hash of its own commit."
+    },
+    "overall": {
+      "main_suite_completed": true,
+      "main_suite_passed": true,
+      "any_test_deselected": true,
+      "self_check_executed_separately": false,
+      "self_check_passed": false,
+      "report_matches_committed_source_and_config": null,
+      "validation_interrupted": false,
+      "all_required_checks_completed": false,
+      "meaning": "all_required_checks_completed is true only when the main suite passed, the deselected self-check was run separately and passed on the committed report, the report matches the source/config, and nothing was interrupted."
+    },
+    "command": "python -m pytest -q -p no:warnings -p no:cacheprovider -rfE --junitxml=<tmp> --deselect tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit --deselect tests/test_final_validation_report.py::test_committed_report_has_unambiguous_schema3_sections_and_matches_tree",
     "deselected": [
-      "tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit"
+      "tests/test_final_validation_report.py::test_committed_report_matches_code_configuration_and_commit",
+      "tests/test_final_validation_report.py::test_committed_report_has_unambiguous_schema3_sections_and_matches_tree"
     ],
-    "deselected_reason": "this test validates the report that is being generated here (it is run separately against the committed report)",
     "returncode": 0,
     "failures": [],
-    "collected": 467,
-    "passed": 467,
+    "collected": 489,
+    "passed": 489,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "counts_available": true,
-    "wall_s": 167.8
+    "wall_s": 167.2
   },
   "sections": {
     "reproducibility": {
