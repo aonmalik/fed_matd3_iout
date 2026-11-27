@@ -88,6 +88,7 @@ def diagnose_rounds(history: list[dict], fcfg) -> dict:
         "inert_rounds_note": "single-update rounds have weight 1.0: sample count, staleness and relevance cannot matter there",
     }
     out["relevance_distributions"] = relevance_distributions(history, fcfg)
+    out["relevance_status_summary"] = summarize_relevance_status(history)
     out["heterogeneity_sensitivity_what_if"] = heterogeneity_sensitivity(fcfg)
     out["verdict"] = verdict(out)
     return out
@@ -198,3 +199,41 @@ def verdict(d: dict) -> dict:
         read = "relevance moves the weights by >=10% (TV) in a typical multi-update round: a measurable mechanism, effect on reward not implied"
     return {**rows, "reading": read, "thresholds_tv": [0.02, 0.10],
             "caveat": "descriptive only; says nothing about whether the shift improves performance"}
+
+
+def summarize_relevance_status(history: list[dict]) -> dict:
+    """Counts of ``relevance_status`` (federated/relevance.py) over client-updates and aggregation rounds.  Descriptive only: it explains why
+    relevance is inactive; it does not establish that relevance helps or hurts learning.  Rounds without the field (older runs) are reported
+    as unavailable, never guessed."""
+    from collections import Counter
+    from ..federated.relevance import SEM_STATUSES, SVC_STATUSES
+    have = [r for r in history if "relevance_status" in r]
+    if not history or len(have) != len(history):
+        return {"available": False, "n_rounds": len(history), "n_rounds_with_status": len(have)}
+    bad = [{"round_index": i, "round": r.get("round"), "n_clients": len(r.get("clients", [])), "n_relevance": len(r.get("relevance", [])),
+            "n_relevance_status": len(r["relevance_status"])}
+           for i, r in enumerate(have) if not (len(r.get("clients", [])) == len(r.get("relevance", [])) == len(r["relevance_status"]))]
+    if bad:                                           # never truncate with zip(): refuse to summarise inconsistent records
+        return {"available": False, "reason": "inconsistent_records: clients / relevance / relevance_status lengths differ",
+                "n_rounds": len(history), "n_inconsistent_rounds": len(bad), "inconsistent_rounds": bad}
+    sem = Counter(); svc = Counter(); joint = Counter(); svc_zero = 0; n_upd = 0
+    multi = zero_rel = no_evid = distinct = 0
+    for r in have:
+        st, rel = r["relevance_status"], [float(x) for x in r["relevance"]]
+        for x in st:
+            n_upd += 1; sem[x["sem"]] += 1; svc[x["svc"]] += 1; joint[f'{x["sem"]}|{x["svc"]}'] += 1; svc_zero += bool(x["svc_zero_with_evidence"])
+        if len(st) >= 2:
+            multi += 1
+            zero_rel += all(m == 0.0 for m in rel)
+            no_evid += all((not x["rho_sem_defined"]) and (not x["rho_svc_defined"]) for x in st)
+            distinct += (max(rel) - min(rel)) > 1e-12
+    consistent = (n_upd == sum(sem.values()) == sum(svc.values()) == sum(joint.values())
+                  and set(sem) <= set(SEM_STATUSES) and set(svc) <= set(SVC_STATUSES))
+    return {"available": True, "n_rounds": len(have), "n_client_updates": n_upd,
+            "semantic_status_counts": {k: sem.get(k, 0) for k in SEM_STATUSES}, "service_status_counts": {k: svc.get(k, 0) for k in SVC_STATUSES},
+            "joint_status_counts": dict(joint), "service_zero_with_evidence": svc_zero,
+            "multi_client_rounds": multi, "multi_rounds_every_relevance_zero": zero_rel,
+            "multi_rounds_no_component_evidence_for_any_client": no_evid, "multi_rounds_with_distinct_relevance": distinct,
+            "counts_consistent": bool(consistent),
+            "meaning": "descriptive; an undefined component is not zero relevance; zero service relevance WITH evidence is counted separately; "
+                       "does not show that relevance weighting improves or degrades learning"}

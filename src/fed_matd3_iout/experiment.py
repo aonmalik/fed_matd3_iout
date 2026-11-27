@@ -40,7 +40,8 @@ def run_one(base_cfg, method: str, seed: int, root: str | Path, overrides: dict 
     if tr.server is not None and tr.server.history:              # descriptive aggregation diagnostics (no effect on learning)
         from .validation.aggregation_diagnostics import diagnose_rounds
         diag = diagnose_rounds(tr.server.history, cfg["federated"])
-    out = {"method": method, "tag": tag or method, "seed": seed, "global": glob, "local": loc, "comm": comm, "aggregation_diagnostics": diag, "termination": termination, "fixed_workload": fw_rows, "training_compute": (tr.compute_report() if hasattr(tr, "compute_report") else None),
+    envd = getattr(getattr(tr, "env", None), "episode_boundary_diagnostics", None)
+    out = {"method": method, "tag": tag or method, "seed": seed, "global": glob, "local": loc, "comm": comm, "aggregation_diagnostics": diag, "episode_boundary_diagnostics": (envd() if envd else None), "termination": termination, "fixed_workload": fw_rows, "training_compute": (tr.compute_report() if hasattr(tr, "compute_report") else None),
            "curve": curve, "checkpoint": str(ckpt), "run_dir": str(run_dir), "device": str(device)}
     atomic_write_json(run_dir / "evaluation.json", out)
     log.info(f"done: U_total(global)={summarise(glob)['U_total']:.1f}")

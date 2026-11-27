@@ -68,3 +68,47 @@ def relevance(stats: dict, kind: str, beta: float, use_semantics: bool = True) -
             return float(s)
         return float(beta * s + (1.0 - beta) * v)
     return 1.0                                   # fedavg / stale: no relevance term
+
+
+# ----------------------------------------------------------------------------------------------------- diagnostics (never used by the update rule)
+SEM_NO_COLLECTION = "no_collection"
+SEM_COLLECTED_NO_MATURE = "collection_no_mature_evidence"
+SEM_MATURE_EVIDENCE = "mature_attribution_evidence"   # neutral: semantic-utility OR unit-based attribution, see "attribution_mode"
+SVC_NO_FLOW = "no_owned_service_flow"
+SVC_EVIDENCE = "service_evidence"
+SEM_STATUSES = (SEM_NO_COLLECTION, SEM_COLLECTED_NO_MATURE, SEM_MATURE_EVIDENCE)
+SVC_STATUSES = (SVC_NO_FLOW, SVC_EVIDENCE)
+
+
+def relevance_status(stats: dict, use_semantics: bool = True) -> dict:
+    """DIAGNOSTIC classification of WHY a relevance component is defined or undefined.  It reads the same frozen ``UpdatePacket.stats``
+    as ``relevance`` and never feeds back into any weight; it does not alter rho_sem / rho_svc / M.
+
+    Semantic status (mutually exclusive, evaluated in this order):
+      mature_attribution_evidence    rho_sem is defined (mature batches with positive value exist in this update's claim).  The label is
+                                     deliberately neutral: with ``use_semantics=True`` the evidence is semantic-utility attribution
+                                     (U_mature / V_mature); with ``use_semantics=False`` (semantics-off ablation) it is UNIT-based
+                                     (units_del_mature / units_coll_mature) and carries no semantic information.  The field
+                                     ``attribution_mode`` ('semantic_utility' | 'unit_based') says which.
+      collection_no_mature_evidence  rho_sem undefined, but data was collected in the window (coll_mbit > 0) or collected batches are still
+                                     open (n_immature_batches > 0, i.e. waiting for delivery/maturity -- NOT a failure)
+      no_collection                  rho_sem undefined and neither collected data in the window nor open batches
+    Service status:
+      service_evidence               rho_svc defined (C + L_own > 0); its value MAY be 0 (collected nothing while owned sensors overflowed)
+      no_owned_service_flow          rho_svc undefined (C + L_own == 0)
+    ``n_immature_batches`` counts the client's open batches at claim time (including batches collected in earlier windows); stats that
+    lack the key (older runs) are treated as 0 immature batches.  An undefined component is never reported as zero relevance here.
+    """
+    s, v = rho_sem(stats, use_semantics), rho_svc(stats)
+    if s is not None:
+        sem = SEM_MATURE_EVIDENCE
+    elif stats.get("coll_mbit", 0.0) > 0.0 or stats.get("n_immature_batches", 0.0) > 0.0:
+        sem = SEM_COLLECTED_NO_MATURE
+    else:
+        sem = SEM_NO_COLLECTION
+    return {"sem": sem, "svc": SVC_EVIDENCE if v is not None else SVC_NO_FLOW,
+            "attribution_mode": "semantic_utility" if use_semantics else "unit_based",
+            "rho_sem_defined": s is not None, "rho_svc_defined": v is not None,
+            "svc_zero_with_evidence": v is not None and v == 0.0,
+            "coll_mbit": float(stats.get("coll_mbit", 0.0)), "owned_loss_mbit": float(stats.get("owned_loss_mbit", 0.0)),
+            "n_mature_batches": float(stats.get("n_mature_batches", 0.0)), "n_immature_batches": float(stats.get("n_immature_batches", 0.0))}

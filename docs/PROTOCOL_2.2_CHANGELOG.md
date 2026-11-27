@@ -43,3 +43,6 @@ Manifest: 2.2 hash re-frozen with the canonical `config_hash` after the config c
 ## Tests (new files)
 `test_comm_capacity.py`, `test_d7_half_duplex.py` [S], `test_drain_bound_modes.py`, `test_model_share_validation.py`, `test_reservation_flag.py`, `test_pilot_script.py` [S2], `test_backlog_clearance.py`, `test_final_drain.py`, `test_d8_drain_policy.py`, `test_d9_compute_energy.py`, `test_d10_fixed_workload.py`, `test_mappo_tanh.py`, `test_protocol22_audit.py`, `test_relevance_distributions.py`, `test_sample_count_semantics.py` [P except D7]; `test_manifest_validator.py` modified [P]. Counts: see CORRECTION_REPORT (from the executed run).
 Other artefacts: `docs/final_validation_report.json` regenerated for 2.2 after the local commit (two-stage procedure in CORRECTION_REPORT); `docs/aggregation_diagnostics.json` regenerated.
+
+## Relevance diagnostics (no behaviour change)
+- Added `relevance_status` per client update (logged per round), `relevance_status_summary`, episode-boundary diagnostics (`episode_boundary_diagnostics`), and three additive keys in the statistics mass balance. rho_sem/rho_svc/M/weights/attribution/settlement/config unchanged. See `docs/RELEVANCE_DIAGNOSTICS.md`.

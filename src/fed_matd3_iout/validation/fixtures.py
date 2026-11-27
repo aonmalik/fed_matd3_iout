@@ -16,7 +16,7 @@ from ..federated.usv_server import USVServer
 
 KEYS = ("coll_mbit", "owned_loss_mbit", "steps", "U_mature", "V_mature", "units_del_mature", "units_coll_mature",
         "n_mature_batches")
-ACC = ("coll_mbit", "V_mature")              # keys whose conservation is checked
+ACC = ("coll_mbit", "owned_loss_mbit", "V_mature", "U_mature", "units_del_mature", "units_coll_mature", "n_mature_batches")              # keys whose conservation is checked
 
 
 def link(up=True, success=True, rate=1.0, prop=0.0):

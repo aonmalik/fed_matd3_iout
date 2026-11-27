@@ -28,3 +28,6 @@ Smoke-scale evidence only (e.g. a 3-episode × 3-seed census: 0/0/2 updates pend
 
 ## H. Required before any publication claim
 Approved D1–D10; hardware-based or otherwise justified energy accounting; calibration of acoustic/energy constants; a pilot then the full 500-episode × 10-seed protocol with paired statistics; drain sensitivity; ablations incl. relevance; 2.1-vs-2.2 impact quantification; independent review of the inherited changes; correctness argument for time-division airtime against the real modem.
+
+## Relevance diagnostics (added after the pilot)
+Diagnostics-only; see `docs/RELEVANCE_DIAGNOSTICS.md`. Relevance was inactive in most pilot rounds (210/215 semantic, 204/215 service rounds with every client's relevance zero). Still open: whether trained policies in the 500-episode protocol give defined, differing relevance (needs a later-checkpoint probe, not yet run); any change to the relevance definition/windowing would be a new protocol version.

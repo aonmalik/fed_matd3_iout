@@ -18,7 +18,7 @@ import numpy as np
 import torch
 
 from .aggregation import aggregate, l2_clip, normalise_with_cap, raw_weights
-from .relevance import relevance, rho_sem, rho_svc
+from .relevance import relevance, relevance_status, rho_sem, rho_svc
 from .staleness import is_acceptable, staleness, staleness_factor
 from .update_packet import ControlMessage, UpdatePacket, UpdateStatus
 
@@ -167,6 +167,8 @@ class USVServer:
                "staleness": [d for _, d in accepted], "n": n, "stale_factor": stale, "relevance": rel,
                # DIAGNOSTIC components of M (None = undefined); never used by the update rule
                "rho_sem": [rho_sem(p.stats, self.use_sem) for p, _ in accepted], "rho_svc": [rho_svc(p.stats) for p, _ in accepted],
+               # DIAGNOSTIC: why each component is defined/undefined (federated/relevance.py::relevance_status); never used by the update rule
+               "relevance_status": [relevance_status(p.stats, self.use_sem) for p, _ in accepted],
                "Z": z.tolist(),
                "w": w.tolist(), "norms": [p.norm for p, _ in accepted], "clip_scale": scales, **diag,
                "rejected": [(p.client_id, d) for p, d in rejected], "theta_norm": float(self.theta.norm())}

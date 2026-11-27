@@ -84,12 +84,17 @@ class MultiAUVIoUTEnv:
         self.censored_V_total = 0.0            # unclaimed collected value discarded at episode resets (diagnostic)
         self.stats_returned = 0                # window-statistics returns merged / refused (diagnostics)
         self.stats_refused_episode = 0
+        # Episode-boundary diagnostics (read-only bookkeeping; no effect on dynamics, statistics or attribution):
+        self.dropped_window = {k: 0.0 for k in self.WINDOW_KEYS}      # partial-window content discarded by an episode reset
+        self.stats_refused_episode_mass = {k: 0.0 for k in self.WINDOW_KEYS}   # finite statistics refused because their episode ended
+        self.episode_boundary_log: list[dict] = []
 
     # ------------------------------------------------------------------ reset
     def reset(self, episode_offset: int = 0):
         cfg, e = self.cfg, self.cfg["env"]
         s = cfg["seeds"]
         if self.book is not None:                                  # censor the previous episode's unclaimed batches
+            self._log_episode_boundary()                           # diagnostics only: records what the next two lines discard
             self.book.reset_episode()
             self.censored_V_total += self.book.censored_V
         self.episode_id += 1
@@ -533,6 +538,28 @@ class MultiAUVIoUTEnv:
         out["n_immature_batches"] = c["n_immature_batches"]          # diagnostic only (not additive, not returned)
         return out
 
+    def _log_episode_boundary(self) -> None:
+        """Record (without changing anything) the partial-window statistics and unclaimed batches that this reset discards."""
+        part = {k: float(self.win[k].sum()) for k in self.WINDOW_KEYS}
+        for k in self.WINDOW_KEYS:
+            self.dropped_window[k] += part[k]
+        opn = [e for a in range(self.M) for e in self.book.open[a].values()]
+        self.episode_boundary_log.append({
+            "ended_episode_id": int(self.episode_id), "steps_run": int(self.step_idx),
+            "partial_window_discarded": part,
+            "partial_window_coll_mbit_by_auv": [float(x) for x in self.win["coll_mbit"]],
+            "partial_window_owned_loss_mbit_by_auv": [float(x) for x in self.win["owned_loss_mbit"]],
+            "censored_open_batches": {"n_entries": len(opn), "V": float(sum(e.V for e in opn)), "units": float(sum(e.units for e in opn)),
+                                      "U_delivered_so_far": float(sum(e.U for e in opn))}})
+
+    def episode_boundary_diagnostics(self) -> dict:
+        """Totals over all resets so far.  Descriptive: what was discarded/censored at episode boundaries, NOT a correction of it."""
+        return {"n_boundaries": len(self.episode_boundary_log), "dropped_partial_window": dict(self.dropped_window),
+                "censored_V_total": float(self.censored_V_total),
+                "stats_refused_episode_count": int(self.stats_refused_episode),
+                "stats_refused_episode_mass": dict(self.stats_refused_episode_mass),
+                "current_episode_id": int(self.episode_id), "log": list(self.episode_boundary_log)}
+
     def return_window_stats(self, i: int, stats: dict, episode_id: int) -> bool:
         """Hand the statistics of a NON-committed update (rejected / expired) back to the client's window.
 
@@ -544,6 +571,9 @@ class MultiAUVIoUTEnv:
         """
         if int(episode_id) != self.episode_id:
             self.stats_refused_episode += 1
+            for k in self.WINDOW_KEYS:                                   # diagnostics only: mass of the statistics that were refused
+                if k in stats and math.isfinite(float(stats[k])):
+                    self.stats_refused_episode_mass[k] += float(stats[k])
             return False
         if any(k in stats and not math.isfinite(float(stats[k])) for k in self.WINDOW_KEYS):
             self.stats_refused_nonfinite = getattr(self, "stats_refused_nonfinite", 0) + 1     # never poison the running window

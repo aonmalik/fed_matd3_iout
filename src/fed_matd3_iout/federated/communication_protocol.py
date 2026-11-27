@@ -30,7 +30,8 @@ from .federated_client import FederatedClient
 from .update_packet import UpdateStatus
 from .usv_server import USVServer
 
-_ACC_KEYS = ("coll_mbit", "owned_loss_mbit", "V_mature", "U_mature")
+# additive window statistics whose conservation (created = consumed + returned + discarded) is verified in tests/test_relevance_diagnostics.py
+_ACC_KEYS = ("coll_mbit", "owned_loss_mbit", "V_mature", "U_mature", "units_del_mature", "units_coll_mature", "n_mature_batches")
 
 
 class FederatedProtocol:
