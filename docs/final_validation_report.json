@@ -3,18 +3,18 @@
   "protocol_version": "2.2",
   "config_hash": "94e1197a496ab283",
   "provenance": {
-    "commit": "5b95946b6396352a815d37e36bc754feeaf96b10",
-    "branch": "protocol-2.2-prepilot-review",
+    "commit": "660520545cebfa2fd7c52240ca74c7d8e31dc52b",
+    "branch": "remedyA-review",
     "working_tree_clean": true,
     "dirty_files": [],
-    "source_tree_hash": "d02d6321b92ad551",
+    "source_tree_hash": "c607ff15757aec99",
     "note": "commit = HEAD when the report was generated; a report cannot contain the hash of the commit that stores it, so it is committed separately AFTER the code commit it describes; source_tree_hash verifies the code is unchanged."
   },
   "environment": {
     "python": "3.13.11",
-    "torch": "2.15.0+cu132",
-    "numpy": "2.5.5",
-    "scipy": "1.18.1",
+    "torch": "2.10.0",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
     "device": "cpu"
   },
   "tests": {
@@ -29,10 +29,10 @@
       ],
       "deselected_count": 2,
       "failures": [],
-      "wall_s": 167.2,
-      "total": 491,
-      "executed": 489,
-      "passed": 489,
+      "wall_s": 181.3,
+      "total": 507,
+      "executed": 505,
+      "passed": 505,
       "failed": 0,
       "errors": 0,
       "skipped": 0,
@@ -67,13 +67,13 @@
     ],
     "returncode": 0,
     "failures": [],
-    "collected": 489,
-    "passed": 489,
+    "collected": 505,
+    "passed": 505,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "counts_available": true,
-    "wall_s": 167.2
+    "wall_s": 181.3
   },
   "sections": {
     "reproducibility": {
@@ -161,7 +161,7 @@
       "scenarios": {
         "delayed_upload": {
           "passed": true,
-          "n_checks": 18,
+          "n_checks": 23,
           "failed": [],
           "details": {
             "staleness": [
@@ -172,7 +172,7 @@
         },
         "stale_rejection": {
           "passed": true,
-          "n_checks": 15,
+          "n_checks": 20,
           "failed": [],
           "details": {
             "reason": "stale_at_receipt"
@@ -180,31 +180,31 @@
         },
         "server_rejection": {
           "passed": true,
-          "n_checks": 15,
+          "n_checks": 20,
           "failed": [],
           "details": {}
         },
         "update_expiration": {
           "passed": true,
-          "n_checks": 32,
+          "n_checks": 42,
           "failed": [],
           "details": {}
         },
         "duplicate_delivery": {
           "passed": true,
-          "n_checks": 17,
+          "n_checks": 22,
           "failed": [],
           "details": {}
         },
         "client_reconnection": {
           "passed": true,
-          "n_checks": 22,
+          "n_checks": 27,
           "failed": [],
           "details": {}
         },
         "asynchronous_aggregation": {
           "passed": true,
-          "n_checks": 16,
+          "n_checks": 21,
           "failed": [],
           "details": {
             "rounds": 7,
@@ -213,7 +213,7 @@
         },
         "episode_transition": {
           "passed": true,
-          "n_checks": 15,
+          "n_checks": 20,
           "failed": [],
           "details": {
             "log": [
